@@ -5,6 +5,7 @@ export interface BusinessInfo {
   category: string;
   website?: string;
   keywords?: string;
+  images?: string[]; // Array of Base64 strings
 }
 
 export interface Simulation {
@@ -62,17 +63,20 @@ export interface LLMPerformance {
 export interface CitationOpportunity {
   siteName: string;
   domain: string;
-  type: 'Directory' | 'Social' | 'Forum' | 'Health/Niche';
+  type: 'Directory' | 'Social' | 'Forum' | 'Health/Niche' | 'LLM Data Source';
   priority: ImpactLevel;
   reason: string;
+  feedsModels: string[]; // e.g. ["Gemini", "ChatGPT"]
 }
 
 export interface LocalCompetitorLocation {
   name: string;
   rank: number;
   distance: string; // e.g., "0.5 miles"
-  x: number; // Relative coordinate for map visualization (-10 to 10)
-  y: number; // Relative coordinate for map visualization (-10 to 10)
+  lat: number;
+  lng: number;
+  address?: string; // Verified address
+  sourceUrl?: string; // Where this competitor was found
 }
 
 // Feature 3: Keyword Heist
@@ -128,6 +132,38 @@ export interface VoiceSimulation {
   };
 }
 
+// Feature: Visual GEO Audit
+export interface VisualAnalysis {
+  overallVibe: string;
+  score: number;
+  detectedTags: string[];
+  improvements: string;
+  source: 'Upload' | 'GMB_Scan' | 'Not_Found'; // Added Not_Found
+}
+
+// Feature: Hallucination Monitor
+export interface FactCheckItem {
+  question: string; // e.g., "Is there parking?"
+  aiAnswer: string; // "Yes, free parking available."
+  confidence: string; // "High" | "Low"
+}
+
+// Feature: PAA Hijacker
+export interface VoiceQAPair {
+  question: string; // "Who has the best gluten free pizza?"
+  answer: string; // The perfect 40-word answer to paste
+  intent: string; // "Discovery" or "Transactional"
+}
+
+// Feature: Market Intelligence (New)
+export interface MarketOverview {
+  marketVibe: string; // e.g. "Oversaturated with low-quality options"
+  competitionLevel: 'Cut-throat' | 'Moderate' | 'Low' | 'Blue Ocean';
+  popularPrompts: string[]; // Actual prompts users type for this category
+  opportunityNiche: string; // The "Gap" in the market
+  hiddenRankingFactor: string; // Specific secret for this area
+}
+
 export interface AnalysisResult {
   overallScore: number;
   summary: string;
@@ -147,6 +183,7 @@ export interface AnalysisResult {
   llmPerformance: LLMPerformance[];
   citationOpportunities: CitationOpportunity[];
   localCompetitors: LocalCompetitorLocation[];
+  businessCoordinates: { lat: number; lng: number };
   
   // High Value Features
   keywordHeist: KeywordGap[];
@@ -163,6 +200,12 @@ export interface AnalysisResult {
   contentStrategy: SocialPostIdea[];
   voiceSimulation: VoiceSimulation;
   
+  // Latest Features
+  visualAudit?: VisualAnalysis;
+  factCheck?: FactCheckItem[];
+  voiceSearchQA?: VoiceQAPair[];
+  marketOverview?: MarketOverview;
+
   competitors: Competitor[];
   recommendations: Recommendation[];
 }

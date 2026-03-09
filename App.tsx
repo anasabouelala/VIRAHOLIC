@@ -3,16 +3,10 @@ import React, { useState, useEffect } from 'react';
 import { AnalysisResult, AnalysisState, BusinessInfo } from './types';
 import BusinessForm from './components/BusinessForm';
 import Dashboard from './components/Dashboard';
-import AuthGate from './components/AuthGate';
 import { analyzeBusinessVisibility } from './services/geminiService';
-import { SparklesIcon } from './components/Icons';
-import { auth, onAuthStateChanged, logOut, User } from './services/firebase';
+import { SparklesIcon, GearIcon } from './components/Icons';
 
 const App: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [authInitialized, setAuthInitialized] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
-  
   const [state, setState] = useState<AnalysisState>({
     loading: false,
     error: null,
@@ -20,22 +14,31 @@ const App: React.FC = () => {
   });
 
   const [businessName, setBusinessName] = useState<string>('');
-  const [pendingAnalysis, setPendingAnalysis] = useState<BusinessInfo | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [openaiKey, setOpenaiKey] = useState('');
+  const [geminiKey, setGeminiKey] = useState('');
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setAuthInitialized(true);
-    });
-    return () => unsubscribe();
+      const storedOpenaiKey = localStorage.getItem('localpulse_openai_key');
+      if (storedOpenaiKey) setOpenaiKey(storedOpenaiKey);
+
+      const storedGeminiKey = localStorage.getItem('localpulse_gemini_key');
+      if (storedGeminiKey) setGeminiKey(storedGeminiKey);
   }, []);
+
+  const saveSettings = () => {
+      localStorage.setItem('localpulse_openai_key', openaiKey);
+      localStorage.setItem('localpulse_gemini_key', geminiKey);
+      setShowSettings(false);
+  };
 
   const runAnalysis = async (info: BusinessInfo) => {
     setState({ loading: true, error: null, result: null });
     setBusinessName(info.name);
     
     try {
-      const result = await analyzeBusinessVisibility(info);
+      // Pass the OpenAI key and Gemini Key if available
+      const result = await analyzeBusinessVisibility(info, openaiKey || undefined, geminiKey || undefined);
       setState({ loading: false, error: null, result });
     } catch (err: any) {
       const errorMessage = err?.message || "An unexpected error occurred. Please try again.";
@@ -44,39 +47,14 @@ const App: React.FC = () => {
   };
 
   const handleAnalysisRequest = async (info: BusinessInfo) => {
-    if (!user) {
-      setPendingAnalysis(info);
-      setShowAuthModal(true);
-    } else {
-      runAnalysis(info);
-    }
-  };
-
-  const handleLoginSuccess = () => {
-    setShowAuthModal(false);
-    if (pendingAnalysis) {
-      runAnalysis(pendingAnalysis);
-      setPendingAnalysis(null);
-    }
+    // Auth check disabled
+    runAnalysis(info);
   };
 
   const handleReset = () => {
     setState({ loading: false, error: null, result: null });
     setBusinessName('');
   };
-
-  const handleLogout = async () => {
-    await logOut();
-    handleReset();
-  };
-
-  if (!authInitialized) {
-      return (
-          <div className="min-h-screen bg-background flex items-center justify-center">
-              <span className="w-5 h-5 border-2 border-zinc-600 border-t-white rounded-full animate-spin"></span>
-          </div>
-      );
-  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col text-zinc-100 relative overflow-x-hidden">
@@ -86,51 +64,89 @@ const App: React.FC = () => {
       {/* Subtle ambient light */}
       <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-white opacity-[0.03] blur-[120px] pointer-events-none z-0"></div>
 
-      {/* Auth Modal */}
-      {showAuthModal && (
-        <AuthGate 
-            onLoginSuccess={handleLoginSuccess} 
-            onCancel={() => setShowAuthModal(false)} 
-        />
-      )}
-
       {/* Navigation */}
       <nav className="border-b border-border bg-background/50 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
-            <div className="flex items-center gap-3" onClick={handleReset} role="button">
+            <div className="flex items-center gap-3 cursor-pointer" onClick={handleReset} role="button">
               <div className="w-8 h-8 bg-zinc-100 rounded flex items-center justify-center">
                  <SparklesIcon className="w-4 h-4 text-black" />
               </div>
               <span className="font-display font-bold text-lg tracking-tight text-white">LocalPulse</span>
             </div>
             <div className="flex items-center gap-4">
-               {user ? (
-                   <div className="flex items-center gap-3">
-                       <div className="hidden sm:flex flex-col items-end">
-                           <span className="text-xs font-bold text-zinc-200">{user.displayName}</span>
-                           <span className="text-[10px] text-zinc-500 font-mono">PRO MEMBER</span>
-                       </div>
-                       <img src={user.photoURL || ''} alt="User" className="w-8 h-8 rounded-full border border-zinc-700" />
-                       <button 
-                            onClick={handleLogout}
-                            className="text-[10px] uppercase font-bold tracking-wider text-zinc-500 hover:text-white transition-colors ml-2"
-                        >
-                            Log Out
-                       </button>
-                   </div>
-               ) : (
-                   <button 
-                        onClick={() => setShowAuthModal(true)}
-                        className="text-xs font-bold text-zinc-300 hover:text-white transition-colors border border-zinc-800 bg-zinc-900/50 px-3 py-1.5 rounded"
-                    >
-                        LOGIN
-                   </button>
-               )}
+              <button 
+                onClick={() => setShowSettings(true)}
+                className="p-2 text-zinc-400 hover:text-white transition-colors relative"
+              >
+                <GearIcon className="w-5 h-5" />
+                {(openaiKey || geminiKey) && <span className="absolute top-1 right-1 w-2 h-2 bg-emerald-500 rounded-full border border-black"></span>}
+              </button>
             </div>
           </div>
         </div>
       </nav>
+
+      {/* Settings Modal */}
+      {showSettings && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+              <div className="bg-surface border border-zinc-800 rounded-xl p-6 w-full max-w-md shadow-2xl relative">
+                  <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                      <GearIcon className="w-5 h-5 text-indigo-400" />
+                      Analysis Settings
+                  </h3>
+                  
+                  <div className="space-y-4">
+                      <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Gemini API Key (Required for Hosting)</label>
+                          <input 
+                            type="password" 
+                            placeholder="AIzaSy..."
+                            value={geminiKey}
+                            onChange={(e) => setGeminiKey(e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-700 rounded p-3 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                          />
+                          <p className="text-[10px] text-zinc-500 mt-2 leading-relaxed">
+                              Required if you are hosting this app yourself. 
+                              Get your key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline">Google AI Studio</a>.
+                          </p>
+                      </div>
+
+                      <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">OpenAI API Key (Optional)</label>
+                          <input 
+                            type="password" 
+                            placeholder="sk-..."
+                            value={openaiKey}
+                            onChange={(e) => setOpenaiKey(e.target.value)}
+                            className="w-full bg-zinc-900 border border-zinc-700 rounded p-3 text-sm text-white focus:border-indigo-500 focus:outline-none"
+                          />
+                          <p className="text-[10px] text-zinc-500 mt-2 leading-relaxed">
+                              Paste your key here to enable <strong>Real-Time ChatGPT Verification</strong>. 
+                              The app will make a live call to OpenAI during the audit to get actual ranking data instead of using a simulation.
+                              <br/><br/>
+                              <span className="text-emerald-500">Note: Your key is stored locally in your browser and never sent to our servers.</span>
+                          </p>
+                      </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3 mt-6">
+                      <button 
+                        onClick={() => setShowSettings(false)}
+                        className="px-4 py-2 text-xs font-bold text-zinc-400 hover:text-white"
+                      >
+                          CANCEL
+                      </button>
+                      <button 
+                        onClick={saveSettings}
+                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-xs font-bold"
+                      >
+                          SAVE SETTINGS
+                      </button>
+                  </div>
+              </div>
+          </div>
+      )}
 
       {/* Main Content */}
       <main className="flex-grow py-12 px-4 sm:px-6 lg:px-8 relative z-10">

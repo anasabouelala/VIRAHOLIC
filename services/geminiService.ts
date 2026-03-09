@@ -1,57 +1,208 @@
 
+/// <reference types="vite/client" />
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisResult, BusinessInfo, ImpactLevel } from "../types";
 
-const getApiKey = (): string => {
-  const key = process.env.API_KEY;
-  if (!key) {
-    throw new Error("API Key not found. Please set REACT_APP_GEMINI_API_KEY.");
+const getApiKey = (providedKey?: string): string => {
+  // 1. Check provided key (from UI settings)
+  if (providedKey) return providedKey;
+
+  // 2. Check Vite env var (standard for self-hosting)
+  if (import.meta.env.VITE_GEMINI_API_KEY) {
+    return import.meta.env.VITE_GEMINI_API_KEY;
   }
-  return key;
+
+  // 3. Check process.env (AI Studio / Legacy)
+  const processKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+  if (processKey) return processKey;
+
+  throw new Error("Gemini API Key not found. Please set VITE_GEMINI_API_KEY in your .env file or enter it in Settings.");
 };
 
-export const analyzeBusinessVisibility = async (business: BusinessInfo): Promise<AnalysisResult> => {
-  const ai = new GoogleGenAI({ apiKey: getApiKey() });
+// New function to fetch REAL ChatGPT data if key exists
+const fetchChatGPTInsight = async (business: BusinessInfo, openaiKey: string): Promise<string> => {
+    try {
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${openaiKey}`
+            },
+            body: JSON.stringify({
+                model: "gpt-4o-mini", // Use mini for speed and cost
+                messages: [
+                    {
+                        role: "system",
+                        content: "You are a helpful local guide. Answer concisely."
+                    },
+                    {
+                        role: "user",
+                        content: `I am looking for the best ${business.category} in ${business.location}. Please provide your top 3 recommendations and explain why. Also, do you know "${business.name}"? If so, what is your opinion on it?`
+                    }
+                ],
+                max_tokens: 300
+            })
+        });
 
-  const prompt = `
-    Analyze the "LLM Visibility" (GEO - Generative Engine Optimization) for:
-    
+        if (!response.ok) return "Error fetching ChatGPT data.";
+        const data = await response.json();
+        return data.choices?.[0]?.message?.content || "No response from ChatGPT.";
+    } catch (e) {
+        console.error("OpenAI Fetch Error", e);
+        return "Failed to connect to OpenAI.";
+    }
+};
+
+export const analyzeBusinessVisibility = async (business: BusinessInfo, openaiKey?: string, geminiKey?: string): Promise<AnalysisResult> => {
+  const ai = new GoogleGenAI({ apiKey: getApiKey(geminiKey) });
+
+  // 1. Fetch Real ChatGPT Data (Parallel)
+  let realChatGPTData = "Simulation Mode (No Key Provided)";
+  if (openaiKey) {
+      realChatGPTData = await fetchChatGPTInsight(business, openaiKey);
+  }
+
+  const promptText = `
+    You are a **Forensic SEO Auditor** specializing in "Generative Engine Optimization" (GEO).
+    Your job is to analyze the visibility of a local business within LLMs (ChatGPT, Gemini, Perplexity).
+
+    **STRICT RULES - ZERO TOLERANCE FOR HALLUCINATION:**
+    1.  **Do NOT invent data.** If you cannot find a specific competitor or statistic via Google Search, state "Unknown" or return a generic valid placeholder, but DO NOT make up a business name or address.
+    2.  **Verify everything.** Every competitor listed MUST exist in the real world. Every citation opportunity MUST be a real website that actually ranks.
+    3.  **Be Exhaustive.** Dig deep. Look for social footprint, video content, and niche directories.
+
+    **SUBJECT:**
     Business: ${business.name}
     Location: ${business.location}
     Category: ${business.category}
     ${business.website ? `Website: ${business.website}` : ''}
-    ${business.keywords ? `Keywords: ${business.keywords}` : ''}
 
-    Target Audience: The user is a business owner who is NOT technical. 
-    Crucial Requirement: For every metric, explain "Why it matters" and "What to do" in simple, non-jargon English.
+    **REAL DATA CONTEXT (ChatGPT):**
+    "${realChatGPTData}"
 
-    Task: Simulate an advanced SEO audit for AI engines.
+    ========================================================
+    PHASE 1: DISCOVERY & IDENTIFICATION
+    ========================================================
+    Use Google Search to find the exact entity.
+    - Handle fuzzy matching (e.g. "Joe's Coffee" vs "Joe's Coffee Shop Austin").
+    - If in a non-English region, search in the local language (e.g. "Kiné" for Physio in France/Morocco).
+    - If you strictly CANNOT find the business after multiple search attempts, trigger "Ghost Mode" (Low Score) but proceed with a "Competitor Analysis" so the user still gets value.
+
+    ========================================================
+    PHASE 2: THE FORENSIC AUDIT
+    ========================================================
     
-    1.  **Research**: Use Google Search to find real info, reviews, citations, and competitors.
-    2.  **LLM Ranking**: Simulate how this business appears specifically in ChatGPT, Gemini, and Perplexity.
-    3.  **Local Map**: Identify 10-15 key competitors.
-    4.  **KPI Analysis**: For Authority, Consistency, Sentiment, Relevance, and Citations, provide a score (0-100), a label (e.g. "Good"), a simple explanation, and a direct fix.
-    5.  **Keyword Heist**: Identify adjectives AI associates with competitors but not the user.
-    6.  **Training Data Audit**: Scan for negative words in reviews that might poison AI answers.
-    7.  **Daily Missions**: Create 4 specific, actionable tasks the user can do TODAY in under 5 minutes.
-    8.  **Content Studio Strategy**: Create 3 completely written social media posts (Instagram, LinkedIn, GMB) that explicitly use the *missing* keywords found in the analysis. This is a "Done for you" service.
-    9.  **Voice Search Simulation**: Write a script of exactly what Siri/Google Assistant would say if asked "Best ${business.category} in ${business.location}". Make it sound natural.
+    1.  **Market Intelligence (The Ecosystem)**:
+        - Search for "Best ${business.category} in ${business.location}".
+        - Analyze the Search Engine Results Page (SERP). Who dominates? Directories? Specific brands?
+        - **Popular Prompts**: Infer what users actually ask based on "People Also Ask" results.
     
-    Return strict JSON.
+    2.  **Competitor Landscape (Accuracy Critical)**:
+        - Identify 5-10 REAL competitors appearing in top search results or maps.
+        - **MANDATORY**: Extract their **real address** or at least the street name. Do not guess coordinates. Estimate Lat/Lng from the real address found.
+    
+    3.  **Citation Analysis (RAG Sources)**:
+        - **Logic**: Gemini/ChatGPT read the top 10 text results on Google to answer "Who is the best?".
+        - Identify which specific URLS rank #1, #2, #3 for "Best ${business.category} ${business.location}".
+        - These are your "Feeders". 
+    
+    4.  **Sentiment & Toxicity**:
+        - Search for "Reviews ${business.name} ${business.location}".
+        - Look for recurring negative words (e.g. "Rude", "Dirty", "Wait time").
+        - If no reviews found, score as neutral/invisible.
+
+    5.  **Visual Audit**:
+        - If images are provided in this request, analyze them.
+        - If NOT, search for "Photos ${business.name} ${business.location}".
+        - If you see photos, analyze the "Vibe". If none, mark as "Visual Ghost".
+
+    ========================================================
+    PHASE 3: SCORING ALGORITHM (MATHEMATICAL, NOT GUESSWORK)
+    ========================================================
+    Calculate 'overallScore' strictly using this point system. Do not deviate.
+    
+    Start with 0 Points.
+    
+    1. **Identity Verified (+20 pts max)**
+       - Found the Entity on Google Maps/Search: +10 pts
+       - Found a specific physical address (not just city): +10 pts
+       
+    2. **RAG Ranking Simulation (+35 pts max)**
+       - Perform a simulated search for "Best ${business.category} in ${business.location}" using your internal knowledge + Google Search results.
+       - If Business is the #1 Recommendation: +35 pts
+       - If Business is in Top 3 List: +20 pts
+       - If Business is mentioned anywhere in text: +10 pts
+       - If not found: 0 pts
+       
+    3. **Citation Authority (+20 pts max)**
+       - For every valid Directory/Source found on Google Page 1 that lists this business: +5 pts (Max 20 pts).
+       
+    4. **Visuals (+10 pts max)**
+       - Images provided or found on GMB: +10 pts
+       - No images: 0 pts
+       
+    5. **Sentiment (+15 pts max)**
+       - Positive sentiment found: +15 pts
+       - No reviews found: +5 pts (Neutral)
+       - Toxic/Negative words found: -10 pts (Penalty)
+
+    **Ghost Mode Penalty:** If Identity Verification failed completely, Max Score is 15.
+
+    Return a strict JSON object matching the schema.
   `;
+
+  const parts: any[] = [{ text: promptText }];
+  
+  // Add images to the payload if they exist
+  if (business.images && business.images.length > 0) {
+    business.images.forEach(base64Str => {
+      // Remove header if present (e.g., "data:image/jpeg;base64,")
+      const base64Data = base64Str.split(',')[1];
+      parts.push({
+        inlineData: {
+          mimeType: 'image/jpeg', // Assuming jpeg for simplicity, or detect from header
+          data: base64Data
+        }
+      });
+    });
+  }
 
   try {
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: prompt,
+      contents: { parts: parts },
       config: {
         tools: [{ googleSearch: {} }],
+        // STABILITY SETTINGS: Low temperature for consistent scoring
+        temperature: 0.1,
+        topK: 40,
+        topP: 0.95,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
             overallScore: { type: Type.NUMBER },
             summary: { type: Type.STRING },
+            businessCoordinates: {
+                type: Type.OBJECT,
+                properties: {
+                    lat: { type: Type.NUMBER },
+                    lng: { type: Type.NUMBER }
+                },
+                required: ["lat", "lng"]
+            },
+            marketOverview: {
+                type: Type.OBJECT,
+                properties: {
+                    marketVibe: { type: Type.STRING },
+                    competitionLevel: { type: Type.STRING, enum: ['Cut-throat', 'Moderate', 'Low', 'Blue Ocean'] },
+                    popularPrompts: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    opportunityNiche: { type: Type.STRING },
+                    hiddenRankingFactor: { type: Type.STRING }
+                },
+                required: ['marketVibe', 'competitionLevel', 'popularPrompts', 'opportunityNiche', 'hiddenRankingFactor']
+            },
             attributes: {
               type: Type.OBJECT,
               properties: {
@@ -174,8 +325,10 @@ export const analyzeBusinessVisibility = async (business: BusinessInfo): Promise
                   name: { type: Type.STRING },
                   rank: { type: Type.NUMBER },
                   distance: { type: Type.STRING },
-                  x: { type: Type.NUMBER },
-                  y: { type: Type.NUMBER }
+                  lat: { type: Type.NUMBER },
+                  lng: { type: Type.NUMBER },
+                  address: { type: Type.STRING },
+                  sourceUrl: { type: Type.STRING }
                 }
               }
             },
@@ -186,9 +339,10 @@ export const analyzeBusinessVisibility = async (business: BusinessInfo): Promise
                 properties: {
                   siteName: { type: Type.STRING },
                   domain: { type: Type.STRING },
-                  type: { type: Type.STRING, enum: ["Directory", "Social", "Forum", "Health/Niche"] },
+                  type: { type: Type.STRING, enum: ["Directory", "Social", "Forum", "Health/Niche", "LLM Data Source"] },
                   priority: { type: Type.STRING, enum: [ImpactLevel.HIGH, ImpactLevel.MEDIUM, ImpactLevel.LOW] },
-                  reason: { type: Type.STRING }
+                  reason: { type: Type.STRING },
+                  feedsModels: { type: Type.ARRAY, items: { type: Type.STRING } }
                 }
               }
             },
@@ -266,6 +420,39 @@ export const analyzeBusinessVisibility = async (business: BusinessInfo): Promise
                 },
                 required: ['query', 'script']
             },
+            visualAudit: {
+                type: Type.OBJECT,
+                properties: {
+                    overallVibe: { type: Type.STRING },
+                    score: { type: Type.NUMBER },
+                    detectedTags: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    improvements: { type: Type.STRING },
+                    source: { type: Type.STRING, enum: ["Upload", "GMB_Scan", "Not_Found"] }
+                },
+                required: ['overallVibe', 'score', 'detectedTags', 'improvements', 'source']
+            },
+            factCheck: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        question: { type: Type.STRING },
+                        aiAnswer: { type: Type.STRING },
+                        confidence: { type: Type.STRING }
+                    }
+                }
+            },
+            voiceSearchQA: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        question: { type: Type.STRING },
+                        answer: { type: Type.STRING },
+                        intent: { type: Type.STRING }
+                    }
+                }
+            },
             competitors: {
               type: Type.ARRAY,
               items: {
@@ -289,7 +476,7 @@ export const analyzeBusinessVisibility = async (business: BusinessInfo): Promise
               }
             }
           },
-          required: ["overallScore", "summary", "attributes", "simulations", "personas", "contentGaps", "platformPerformance", "llmPerformance", "localCompetitors", "citationOpportunities", "keywordHeist", "sentimentAudit", "dailyMissions", "contentStrategy", "voiceSimulation", "competitors", "recommendations"]
+          required: ["overallScore", "summary", "businessCoordinates", "marketOverview", "attributes", "simulations", "personas", "contentGaps", "platformPerformance", "llmPerformance", "localCompetitors", "citationOpportunities", "keywordHeist", "sentimentAudit", "dailyMissions", "contentStrategy", "voiceSimulation", "competitors", "recommendations", "visualAudit"]
         }
       }
     });

@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+
+import React, { useState, useRef } from 'react';
 import { BusinessInfo } from '../types';
-import { MapPinIcon, GlobeIcon, SearchIcon, SparklesIcon } from './Icons';
+import { MapPinIcon, GlobeIcon, SearchIcon, SparklesIcon, GlobeIcon as NetworkIcon } from './Icons';
 
 interface Props {
   onSubmit: (info: BusinessInfo) => void;
@@ -13,8 +14,30 @@ const BusinessForm: React.FC<Props> = ({ onSubmit, isLoading }) => {
     location: '',
     category: '',
     website: '',
-    keywords: ''
+    keywords: '',
+    images: []
   });
+  const [previewImages, setPreviewImages] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files).slice(0, 3); // Max 3 images
+      const promises = files.map(file => {
+        return new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file as Blob);
+        });
+      });
+
+      Promise.all(promises).then(base64Images => {
+        setInfo(prev => ({ ...prev, images: base64Images }));
+        setPreviewImages(base64Images);
+      });
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,6 +120,52 @@ const BusinessForm: React.FC<Props> = ({ onSubmit, isLoading }) => {
                     onChange={(e) => setInfo(prev => ({ ...prev, keywords: e.target.value }))}
                 />
             </div>
+
+            {/* Visual GEO Input */}
+            <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider ml-1 flex items-center justify-between">
+                    <span>Visual Audit (Photos)</span>
+                    <span className="text-[10px] text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">NEW FEATURE</span>
+                </label>
+                <div 
+                    onClick={() => fileInputRef.current?.click()}
+                    className={`w-full bg-zinc-900/50 border border-dashed rounded-lg px-4 py-6 flex flex-col items-center justify-center cursor-pointer transition-all group
+                        ${previewImages.length > 0 ? 'border-zinc-600' : 'border-zinc-700 hover:border-emerald-500/50 hover:bg-emerald-950/5'}`}
+                >
+                    <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        onChange={handleImageUpload} 
+                        className="hidden" 
+                        multiple 
+                        accept="image/*"
+                    />
+                    {previewImages.length > 0 ? (
+                        <div className="w-full">
+                            <div className="flex gap-2 justify-center mb-2">
+                                {previewImages.map((img, idx) => (
+                                    <img key={idx} src={img} alt="Preview" className="w-16 h-16 object-cover rounded border border-zinc-700" />
+                                ))}
+                            </div>
+                            <p className="text-center text-[10px] text-zinc-500">Manual images selected. Click to change.</p>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="w-12 h-12 rounded-full bg-zinc-800 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform relative">
+                                <SparklesIcon className="w-5 h-5 text-emerald-400 relative z-10" />
+                                <div className="absolute inset-0 bg-emerald-500/20 rounded-full animate-ping opacity-0 group-hover:opacity-100"></div>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-emerald-400 text-xs font-bold uppercase tracking-wide mb-1">Auto-Scan Active</p>
+                                <p className="text-zinc-500 text-[10px] max-w-xs mx-auto">
+                                    We will automatically scan Google Maps for your business photos. 
+                                    <span className="text-zinc-400 block mt-1">(Optional) Click here to upload specific photos instead.</span>
+                                </p>
+                            </div>
+                        </>
+                    )}
+                </div>
+            </div>
           </div>
 
           <div className="pt-2">
@@ -112,7 +181,7 @@ const BusinessForm: React.FC<Props> = ({ onSubmit, isLoading }) => {
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
                   <span className="w-4 h-4 border-2 border-zinc-400 border-t-zinc-800 rounded-full animate-spin"></span>
-                  PROCESSING DATA...
+                  SCANNING GMB & VISUAL DATA...
                 </span>
               ) : (
                 'INITIATE ANALYSIS'

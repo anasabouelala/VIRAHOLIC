@@ -1,44 +1,18 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { AnalysisResult, ImpactLevel, AttributeDetail } from '../types';
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, ScatterChart, Scatter, XAxis, YAxis, ZAxis, Tooltip, Cell, CartesianGrid } from 'recharts';
-import { AlertCircleIcon, TrendingUpIcon, RefreshCwIcon, MapPinIcon, GlobeIcon, SparklesIcon, TargetIcon, ActivityIcon, CheckCircleIcon, LightbulbIcon, InfoIcon, FlameIcon, CalendarIcon, ZapIcon, CopyIcon, PenToolIcon, MicIcon, PlayIcon, StopIcon, InstagramIcon } from './Icons';
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
+import { Map, Marker, Overlay } from 'pigeon-maps';
+import { AlertCircleIcon, TrendingUpIcon, RefreshCwIcon, MapPinIcon, GlobeIcon, SparklesIcon, TargetIcon, ActivityIcon, CheckCircleIcon, LightbulbIcon, InfoIcon, FlameIcon, CalendarIcon, ZapIcon, CopyIcon, PenToolIcon, MicIcon, PlayIcon, StopIcon, InstagramIcon, EyeOffIcon } from './Icons';
+
+// Cast Marker to any to avoid TS error with 'key' prop
+const MarkerAny = Marker as any;
 
 interface Props {
   data: AnalysisResult;
   businessName: string;
   onReset: () => void;
 }
-
-// Custom Shape for the Map Points
-const CustomMapNode = (props: any) => {
-  const { cx, cy, payload } = props;
-  
-  // Render "You" (Target Business)
-  if (payload.rank === 0) {
-    return (
-      <g style={{ filter: 'drop-shadow(0px 0px 8px rgba(99, 102, 241, 0.6))' }}>
-        <circle cx={cx} cy={cy} r={8} fill="#6366f1" className="animate-pulse" />
-        <circle cx={cx} cy={cy} r={24} fill="none" stroke="#6366f1" strokeOpacity={0.4} strokeWidth={1} className="animate-ping" style={{ animationDuration: '3s' }} />
-        <text x={cx} y={cy + 20} textAnchor="middle" fill="#a5b4fc" fontSize={10} fontWeight="bold" fontFamily="monospace">YOU</text>
-      </g>
-    );
-  }
-  
-  // Render Competitors
-  const isTopRank = payload.rank <= 3;
-  const fillColor = "#09090b"; // Dark background for the circle to hide grid lines behind number
-  const strokeColor = isTopRank ? "#f43f5e" : "#52525b"; // Red for top competitors, Grey for others
-  const textColor = isTopRank ? "#f43f5e" : "#a1a1aa";
-  const radius = isTopRank ? 14 : 10;
-  
-  return (
-    <g className="transition-all duration-300 hover:scale-110 cursor-crosshair">
-        <circle cx={cx} cy={cy} r={radius} fill={fillColor} stroke={strokeColor} strokeWidth={2} />
-        <text x={cx} y={cy + (radius/3)} textAnchor="middle" fill={textColor} fontSize={radius * 0.8} fontWeight="bold" fontFamily="monospace">{payload.rank}</text>
-    </g>
-  );
-};
 
 const AttributeCard = ({ title, detail, icon }: { title: string, detail: AttributeDetail, icon: React.ReactNode }) => {
     return (
@@ -86,12 +60,15 @@ const AttributeCard = ({ title, detail, icon }: { title: string, detail: Attribu
 }
 
 const Dashboard: React.FC<Props> = ({ data, businessName, onReset }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'map' | 'llms' | 'citations' | 'deepdive' | 'missions' | 'studio'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'map' | 'llms' | 'citations' | 'deepdive' | 'missions' | 'studio' | 'visual'>('overview');
   const [completedMissions, setCompletedMissions] = useState<string[]>([]);
   const [reviewInput, setReviewInput] = useState('');
   const [reviewResponse, setReviewResponse] = useState('');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const synthRef = useRef<SpeechSynthesis | null>(null);
+
+  // Map state
+  const [hoveredCompetitor, setHoveredCompetitor] = useState<any | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -166,16 +143,16 @@ const Dashboard: React.FC<Props> = ({ data, businessName, onReset }) => {
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-transparent to-transparent opacity-50"></div>
             <h3 className="text-zinc-400 text-xs font-mono uppercase tracking-widest mb-4 z-10">Geo Score</h3>
             <div className="relative z-10">
-                <svg className="w-32 h-32 transform -rotate-90">
-                    <circle cx="64" cy="64" r="60" stroke="#27272a" strokeWidth="6" fill="transparent" />
+                <svg className="w-40 h-40 transform -rotate-90" viewBox="0 0 160 160">
+                    <circle cx="80" cy="80" r="64" stroke="#27272a" strokeWidth="8" fill="transparent" />
                     <circle 
-                        cx="64" cy="64" r="60" 
+                        cx="80" cy="80" r="64" 
                         stroke="url(#scoreGradient)" 
-                        strokeWidth="6" 
+                        strokeWidth="8" 
                         strokeLinecap="round"
                         fill="transparent" 
-                        strokeDasharray={377} 
-                        strokeDashoffset={377 - (377 * data.overallScore) / 100} 
+                        strokeDasharray={402} 
+                        strokeDashoffset={402 - (402 * data.overallScore) / 100} 
                         className="transition-all duration-1000 ease-out filter drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]" 
                     />
                     <defs>
@@ -204,6 +181,62 @@ const Dashboard: React.FC<Props> = ({ data, businessName, onReset }) => {
             </p>
         </div>
       </div>
+
+      {/* NEW: Market Intelligence Section */}
+      {data.marketOverview && (
+          <div className="bg-surface border border-zinc-800 rounded-xl p-6 shadow-lg relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-emerald-900/10 to-transparent pointer-events-none"></div>
+              <h3 className="text-sm font-bold text-white mb-6 uppercase tracking-wide flex items-center gap-2 relative z-10">
+                  <GlobeIcon className="w-4 h-4 text-emerald-500" />
+                  Market Intelligence (Ecosystem View)
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
+                  {/* Market Vibe */}
+                  <div className="col-span-1 md:col-span-1 bg-zinc-900/50 rounded-lg p-4 border border-zinc-800">
+                      <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Category Saturation</p>
+                      <div className="flex items-center gap-2 mb-3">
+                          <div className={`text-lg font-bold ${data.marketOverview.competitionLevel === 'Blue Ocean' || data.marketOverview.competitionLevel === 'Low' ? 'text-emerald-400' : data.marketOverview.competitionLevel === 'Moderate' ? 'text-amber-400' : 'text-rose-500'}`}>
+                              {data.marketOverview.competitionLevel}
+                          </div>
+                      </div>
+                      <p className="text-xs text-zinc-400 leading-relaxed">
+                          {data.marketOverview.marketVibe}
+                      </p>
+                  </div>
+
+                  {/* Popular Prompts (Chat Stream) */}
+                  <div className="col-span-1 md:col-span-1 bg-zinc-900/50 rounded-lg p-4 border border-zinc-800 flex flex-col">
+                      <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-3">Top User Prompts (Locally)</p>
+                      <div className="space-y-2 flex-grow">
+                          {data.marketOverview.popularPrompts.map((prompt, i) => (
+                              <div key={i} className="bg-zinc-800 rounded-lg rounded-tl-none p-2 text-xs text-zinc-300 border border-zinc-700/50 inline-block w-full">
+                                  "{prompt}"
+                              </div>
+                          ))}
+                      </div>
+                  </div>
+
+                  {/* Opportunity & Secret */}
+                  <div className="col-span-1 md:col-span-1 flex flex-col gap-4">
+                      <div className="bg-indigo-500/10 border border-indigo-500/20 rounded-lg p-4 flex-grow">
+                          <div className="flex items-center gap-2 mb-2">
+                               <TargetIcon className="w-3 h-3 text-indigo-400" />
+                               <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-wider">Blue Ocean Opportunity</span>
+                          </div>
+                          <p className="text-xs text-zinc-300">{data.marketOverview.opportunityNiche}</p>
+                      </div>
+                      <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 flex-grow">
+                           <div className="flex items-center gap-2 mb-2">
+                               <ZapIcon className="w-3 h-3 text-amber-400" />
+                               <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">Hidden Ranking Factor</span>
+                          </div>
+                          <p className="text-xs text-zinc-300">{data.marketOverview.hiddenRankingFactor}</p>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Radar Chart (Visual Shape) */}
@@ -290,6 +323,105 @@ const Dashboard: React.FC<Props> = ({ data, businessName, onReset }) => {
       </div>
     </div>
   );
+
+  const renderVisual = () => {
+      const isNotFound = data.visualAudit?.source === 'Not_Found';
+      return (
+        <div className="space-y-6 animate-slide-up">
+          {data.visualAudit && (
+              <div className="bg-surface border border-zinc-800 rounded-xl p-8 shadow-lg relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center relative z-10">
+                      <div>
+                          <div className="flex flex-wrap items-center gap-2 mb-4">
+                              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                                  <SparklesIcon className="w-3 h-3 text-emerald-400" />
+                                  <span className="text-xs font-bold text-emerald-400 uppercase tracking-wide">Computer Vision Analysis</span>
+                              </div>
+                              <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border 
+                                  ${isNotFound ? 'bg-zinc-800 border-zinc-700' : 
+                                    data.visualAudit.source === 'Upload' ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-emerald-500/10 border-emerald-500/30'}`}>
+                                  <span className={`text-xs font-bold uppercase tracking-wide ${isNotFound ? 'text-zinc-500' : data.visualAudit.source === 'Upload' ? 'text-indigo-400' : 'text-emerald-400'}`}>
+                                      Source: {isNotFound ? 'No Visual Data' : data.visualAudit.source === 'Upload' ? 'Manual Upload' : 'Google Maps Scan'}
+                                  </span>
+                              </div>
+                          </div>
+  
+                          <h3 className="text-2xl font-bold text-white mb-2">Visual Brand "Vibe"</h3>
+                          <p className="text-zinc-400 leading-relaxed mb-6">
+                              {isNotFound 
+                                  ? 'We could not find any public photos for this business on Google Maps. AI models treat businesses without photos as "low trust" entities.'
+                                  : data.visualAudit.source === 'Upload' 
+                                      ? 'We used Gemini Vision to analyze your uploaded photos. This is how the AI "sees" your establishment.'
+                                      : 'We scanned your public Google Maps presence. This represents how AI models perceive your visual identity from public data.'
+                              }
+                          </p>
+                          
+                          {!isNotFound && (
+                              <div className="bg-zinc-900/50 rounded-lg p-5 border border-zinc-800 mb-6">
+                                  <h4 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2">Detected Attributes</h4>
+                                  <div className="flex flex-wrap gap-2">
+                                      {data.visualAudit.detectedTags.map((tag, i) => (
+                                          <span key={i} className="px-3 py-1 bg-zinc-800 border border-zinc-700 rounded-full text-xs text-zinc-300">
+                                              {tag}
+                                          </span>
+                                      ))}
+                                  </div>
+                              </div>
+                          )}
+  
+                          <div className="p-4 bg-indigo-500/5 border border-indigo-500/20 rounded-lg">
+                              <h4 className="text-sm font-bold text-indigo-400 mb-2 flex items-center gap-2">
+                                  <LightbulbIcon className="w-4 h-4" />
+                                  Optimization Strategy
+                              </h4>
+                              <p className="text-sm text-zinc-300">{data.visualAudit.improvements}</p>
+                          </div>
+                      </div>
+  
+                      <div className="flex flex-col items-center justify-center">
+                           {isNotFound ? (
+                               <div className="flex flex-col items-center justify-center py-8">
+                                  <div className="w-24 h-24 bg-zinc-900 rounded-full flex items-center justify-center mb-4 border border-zinc-800 relative">
+                                       <div className="absolute inset-0 bg-zinc-800/50 rounded-full animate-pulse"></div>
+                                       <EyeOffIcon className="w-10 h-10 text-zinc-600 relative z-10" /> 
+                                  </div>
+                                  <span className="text-2xl font-bold text-zinc-600 mb-1">Visual Ghost</span>
+                                  <span className="text-xs text-zinc-500 uppercase font-bold tracking-widest">No Data Found</span>
+                               </div>
+                           ) : (
+                               <>
+                                  <div className="relative w-48 h-48 flex items-center justify-center">
+                                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 160 160">
+                                          <circle cx="80" cy="80" r="70" stroke="#18181b" strokeWidth="10" fill="transparent" />
+                                          <circle 
+                                              cx="80" cy="80" r="70" 
+                                              stroke="#10b981" 
+                                              strokeWidth="10" 
+                                              strokeLinecap="round"
+                                              fill="transparent" 
+                                              strokeDasharray={440} 
+                                              strokeDashoffset={440 - (440 * (data.visualAudit.score || 0)) / 100} 
+                                              className="transition-all duration-1000 ease-out" 
+                                          />
+                                      </svg>
+                                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                          <span className="text-5xl font-bold text-white">{data.visualAudit.score}</span>
+                                          <span className="text-xs text-zinc-500 uppercase font-bold mt-1">Visual Score</span>
+                                      </div>
+                                  </div>
+                                  <p className="text-center text-zinc-500 text-xs mt-4 max-w-xs italic">
+                                      "{data.visualAudit.overallVibe}"
+                                  </p>
+                               </>
+                           )}
+                      </div>
+                  </div>
+              </div>
+          )}
+        </div>
+      );
+  }
 
   const renderMissions = () => (
     <div className="space-y-6 animate-slide-up">
@@ -425,267 +557,14 @@ const Dashboard: React.FC<Props> = ({ data, businessName, onReset }) => {
     </div>
   )
 
-  const renderStudio = () => {
-    return (
-        <div className="space-y-8 animate-slide-up">
-            {/* Voice Simulation Section */}
-            <div className="bg-surface border border-zinc-800 rounded-xl p-8 shadow-lg relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                <div className="flex flex-col md:flex-row gap-8 items-center relative z-10">
-                    <div className="flex-1">
-                        <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
-                            <MicIcon className="w-5 h-5 text-emerald-400" />
-                            Voice Search Simulator
-                        </h3>
-                        <p className="text-zinc-400 text-sm mb-6 max-w-lg">
-                            Hearing is believing. This is exactly how Siri, Alexa, and Google Assistant describe your business compared to the top search result.
-                        </p>
-                        
-                        <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6 relative">
-                             <div className="absolute -top-3 left-4 bg-zinc-800 px-2 py-1 rounded text-[10px] font-bold text-zinc-400 uppercase">Simulated Response</div>
-                             <p className="text-zinc-200 text-lg font-light leading-relaxed mb-6 font-display italic">
-                                "{data.voiceSimulation?.script}"
-                             </p>
-                             <div className="flex gap-4">
-                                <button 
-                                    onClick={() => handleSpeak(data.voiceSimulation?.script || '')}
-                                    className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold text-sm tracking-wide transition-all
-                                    ${isSpeaking 
-                                        ? 'bg-rose-500 text-white hover:bg-rose-600 shadow-[0_0_15px_rgba(244,63,94,0.4)]' 
-                                        : 'bg-white text-black hover:bg-zinc-200 shadow-[0_0_15px_rgba(255,255,255,0.1)]'}`}
-                                >
-                                    {isSpeaking ? (
-                                        <>
-                                            <StopIcon className="w-4 h-4" /> STOP AUDIO
-                                        </>
-                                    ) : (
-                                        <>
-                                            <PlayIcon className="w-4 h-4" /> PLAY SIMULATION
-                                        </>
-                                    )}
-                                </button>
-                             </div>
-                        </div>
-                    </div>
-                    
-                    {/* Visualizer Decoration */}
-                    <div className="hidden md:flex flex-col items-center gap-1 w-32 h-32 justify-center opacity-50">
-                        {[...Array(5)].map((_, i) => (
-                             <div key={i} className={`w-1 rounded-full bg-emerald-500 transition-all duration-300 ease-in-out
-                             ${isSpeaking ? 'animate-pulse h-16' : 'h-2'}`} style={{ height: isSpeaking ? Math.random() * 60 + 20 + 'px' : '4px' }}></div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-
-            {/* Content Studio Section */}
-            <div>
-                 <h3 className="text-sm font-bold text-zinc-300 mb-6 flex items-center gap-2 uppercase tracking-wide">
-                    <PenToolIcon className="w-4 h-4 text-indigo-500" />
-                    AI Content Studio (Done-For-You)
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {data.contentStrategy?.map((post, idx) => (
-                        <div key={idx} className="bg-surface border border-zinc-800 rounded-xl overflow-hidden hover:border-zinc-600 transition-all group">
-                            <div className="bg-zinc-900 border-b border-zinc-800 p-4 flex justify-between items-center">
-                                <div className="flex items-center gap-2">
-                                    {post.platform === 'Instagram' && <InstagramIcon className="w-4 h-4 text-pink-500" />}
-                                    {post.platform === 'LinkedIn' && <div className="w-4 h-4 bg-blue-600 rounded flex items-center justify-center text-[10px] font-bold text-white">in</div>}
-                                    {post.platform === 'GMB' && <MapPinIcon className="w-4 h-4 text-blue-500" />}
-                                    <span className="text-sm font-bold text-zinc-200">{post.platform} Draft</span>
-                                </div>
-                                <span className="text-[10px] text-zinc-500 font-mono">READY TO POST</span>
-                            </div>
-                            <div className="p-6 space-y-4">
-                                <div>
-                                    <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">Strategy</span>
-                                    <p className="text-xs text-indigo-400 mt-1">{post.whyThisWorks}</p>
-                                </div>
-                                <div className="bg-zinc-900/50 rounded p-3 border border-zinc-800">
-                                    <p className="text-sm text-zinc-300 whitespace-pre-line">{post.caption}</p>
-                                    <p className="text-xs text-blue-400 mt-2">{post.hashtags.map(h => `${h} `)}</p>
-                                </div>
-                                <div>
-                                    <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">Image Concept</span>
-                                    <p className="text-xs text-zinc-400 italic mt-1">{post.imageIdea}</p>
-                                </div>
-                                <button className="w-full py-2 border border-zinc-700 rounded text-xs font-bold text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors flex items-center justify-center gap-2"
-                                    onClick={() => navigator.clipboard.writeText(`${post.caption} ${post.hashtags.join(' ')}`)}
-                                >
-                                    <CopyIcon className="w-3 h-3" /> COPY TO CLIPBOARD
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-  }
-
-  const renderMap = () => {
-    const mapData = [
-      { x: 0, y: 0, name: businessName, rank: 0, z: 0 },
-      ...(data.localCompetitors?.map(c => ({
-        x: c.x,
-        y: c.y,
-        name: c.name,
-        rank: c.rank,
-        z: 0 // We don't use z for size anymore, we use rank in custom shape
-      })) || [])
-    ];
-
-    return (
-      <div className="space-y-6 animate-slide-up">
-        <div className="bg-surface border border-zinc-800 rounded-xl p-1 h-[700px] flex flex-col shadow-2xl relative overflow-hidden">
-            {/* Map Header Overlay */}
-            <div className="absolute top-6 left-6 z-20 pointer-events-none">
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 bg-black/50 backdrop-blur-md px-3 py-1 rounded-full border border-zinc-800">
-                    <div className="w-2 h-2 bg-rose-500 rounded-full animate-pulse"></div>
-                    Competitor Radar
-                </h3>
-                <p className="text-zinc-500 text-[10px] mt-2 font-mono ml-2">PROXIMITY SCAN • 5KM RADIUS</p>
-            </div>
-
-             {/* Cardinal Directions */}
-             <div className="absolute top-4 left-1/2 -translate-x-1/2 text-zinc-700 font-mono text-xs font-bold pointer-events-none z-10">N</div>
-             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-zinc-700 font-mono text-xs font-bold pointer-events-none z-10">S</div>
-             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-700 font-mono text-xs font-bold pointer-events-none z-10">W</div>
-             <div className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-700 font-mono text-xs font-bold pointer-events-none z-10">E</div>
-
-
-            <div className="flex-grow bg-[#050505] rounded-lg relative overflow-hidden cursor-crosshair">
-                {/* Background Grid Pattern */}
-                <div className="absolute inset-0 bg-[linear-gradient(to_right,#18181b_1px,transparent_1px),linear-gradient(to_bottom,#18181b_1px,transparent_1px)] bg-[size:40px_40px] opacity-30"></div>
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-900/10 via-black to-black"></div>
-                
-                {/* Sonar Rings */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[30%] h-[30%] rounded-full border border-zinc-800/60 pointer-events-none"></div>
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] rounded-full border border-zinc-800/40 pointer-events-none"></div>
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] h-[90%] rounded-full border border-zinc-800/20 pointer-events-none"></div>
-
-                {/* Axes Lines */}
-                <div className="absolute top-0 left-1/2 w-px h-full bg-indigo-500/10 z-0"></div>
-                <div className="absolute left-0 top-1/2 h-px w-full bg-indigo-500/10 z-0"></div>
-
-                <ResponsiveContainer width="100%" height="100%">
-                  <ScatterChart margin={{ top: 40, right: 40, bottom: 40, left: 40 }}>
-                    <XAxis type="number" dataKey="x" name="Longitude" hide domain={[-12, 12]} />
-                    <YAxis type="number" dataKey="y" name="Latitude" hide domain={[-12, 12]} />
-                    <Tooltip 
-                        cursor={{ strokeDasharray: '3 3', stroke: '#52525b' }} 
-                        content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                            const data = payload[0].payload;
-                            return (
-                            <div className="bg-zinc-900/95 backdrop-blur border border-zinc-700 p-3 rounded shadow-2xl z-50">
-                                <p className="font-bold text-white text-sm mb-1">{data.name}</p>
-                                <div className="flex flex-col gap-1">
-                                    <p className={`text-xs font-mono font-bold ${data.rank === 0 ? 'text-indigo-400' : 'text-rose-400'}`}>
-                                        {data.rank === 0 ? "TARGET BUSINESS" : `RANK #${data.rank}`}
-                                    </p>
-                                    {data.rank !== 0 && (
-                                        <p className="text-[10px] text-zinc-500 font-mono">
-                                            Approx. Distance: {Math.sqrt(data.x*data.x + data.y*data.y).toFixed(1)} km
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                            );
-                        }
-                        return null;
-                        }}
-                    />
-                    <Scatter name="Competitors" data={mapData} shape={<CustomMapNode />} />
-                  </ScatterChart>
-                </ResponsiveContainer>
-
-                {/* Legend */}
-                <div className="absolute bottom-6 right-6 flex flex-col gap-2 bg-black/80 backdrop-blur-md p-3 rounded-lg border border-zinc-800 shadow-xl pointer-events-none">
-                     <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 rounded-full bg-indigo-500 flex items-center justify-center text-[8px] font-bold text-white">YOU</div>
-                        <span className="text-xs text-zinc-300 font-mono">YOUR BUSINESS</span>
-                     </div>
-                     <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 rounded-full border border-rose-500 text-rose-500 flex items-center justify-center text-[8px] font-bold">1</div>
-                        <span className="text-xs text-zinc-300 font-mono">TOP 3 RANK</span>
-                     </div>
-                     <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 rounded-full border border-zinc-600 text-zinc-500 flex items-center justify-center text-[8px] font-bold">8</div>
-                        <span className="text-xs text-zinc-300 font-mono">LOWER RANK</span>
-                     </div>
-                </div>
-            </div>
-        </div>
-
-        {/* Competitor List below map */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-             {data.localCompetitors?.sort((a,b) => a.rank - b.rank).map((comp, idx) => (
-                 <div key={idx} className="bg-surface border border-zinc-800 p-3 rounded-lg flex items-center justify-between hover:border-zinc-600 transition-colors group">
-                     <div className="flex items-center gap-3">
-                         <div className={`w-8 h-8 rounded flex items-center justify-center font-bold text-sm border
-                             ${comp.rank <= 3 ? 'bg-rose-500/10 border-rose-500/30 text-rose-500' : 'bg-zinc-900 border-zinc-700 text-zinc-500'}`}>
-                             #{comp.rank}
-                         </div>
-                         <div>
-                             <h4 className="text-zinc-200 font-medium text-sm group-hover:text-white truncate max-w-[150px]">{comp.name}</h4>
-                             <p className="text-[10px] text-zinc-500 font-mono">{comp.distance} away</p>
-                         </div>
-                     </div>
-                 </div>
-             ))}
-        </div>
-      </div>
-    );
-  };
-
-  const renderLLMs = () => (
-    <div className="space-y-6 animate-slide-up">
-      <div className="bg-surface border border-zinc-800 rounded-xl p-6 shadow-lg">
-        <h3 className="text-sm font-bold text-zinc-300 mb-8 uppercase tracking-wide">Model Analysis</h3>
-        <div className="space-y-4">
-          {data.llmPerformance?.map((llm, idx) => (
-            <div key={idx} className={`group border rounded-lg overflow-hidden transition-all bg-zinc-900/30 ${llm.model === 'ChatGPT' ? 'hover:border-emerald-500/50 border-zinc-800' : llm.model === 'Gemini' ? 'hover:border-blue-500/50 border-zinc-800' : 'hover:border-teal-500/50 border-zinc-800'}`}>
-               <div className="px-6 py-5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                  <div className="flex items-center gap-5">
-                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-lg
-                        ${llm.model === 'ChatGPT' ? 'bg-emerald-600 shadow-emerald-900/20' : llm.model === 'Gemini' ? 'bg-blue-600 shadow-blue-900/20' : 'bg-teal-700 shadow-teal-900/20'}`}>
-                       {llm.model[0]}
-                    </div>
-                    <div>
-                        <h4 className="font-bold text-white text-lg">{llm.model}</h4>
-                        <div className="flex items-center gap-3 mt-1">
-                           <div className="w-48 bg-zinc-900 h-2 rounded-full overflow-hidden border border-zinc-800">
-                               <div 
-                                className={`h-full rounded-full ${llm.model === 'ChatGPT' ? 'bg-emerald-500' : llm.model === 'Gemini' ? 'bg-blue-500' : 'bg-teal-500'}`} 
-                                style={{ width: `${llm.score}%` }}></div>
-                           </div>
-                           <span className="text-xs text-zinc-400 font-mono font-bold">{llm.score} PTS</span>
-                        </div>
-                    </div>
-                  </div>
-                  <span className={`px-3 py-1 text-[10px] font-bold font-mono border rounded uppercase tracking-wider
-                     ${llm.status === 'Top Choice' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : 'border-zinc-800 text-zinc-500'}`}>
-                     {llm.status}
-                  </span>
-               </div>
-               <div className="px-6 pb-6 pt-2">
-                  <p className="text-zinc-400 text-sm leading-relaxed border-l-2 border-zinc-800 pl-4 group-hover:border-zinc-600 transition-colors">{llm.details}</p>
-               </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
   const renderCitations = () => (
     <div className="space-y-6 animate-slide-up">
         <div className="bg-surface border border-zinc-800 p-6 rounded-xl shadow-lg relative overflow-hidden">
              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl"></div>
-            <h3 className="text-sm font-bold text-zinc-300 mb-2 uppercase tracking-wide relative z-10">Knowledge Graph Sources</h3>
+            <h3 className="text-sm font-bold text-zinc-300 mb-2 uppercase tracking-wide relative z-10">Knowledge Graph Feeders (RAG Sources)</h3>
             <p className="text-zinc-500 text-sm mb-6 max-w-2xl font-light relative z-10">
-                Optimize these sources to establish entity authority within the vector space of large language models.
+                AI models don't just guess; they read the top search results for your city. 
+                <span className="text-zinc-400"> These specific directories rank on Page 1 of Google for your category.</span> listing here directly feeds the AI's answer engine.
             </p>
 
             <div className="grid grid-cols-1 gap-3 relative z-10">
@@ -702,10 +581,20 @@ const Dashboard: React.FC<Props> = ({ data, businessName, onReset }) => {
                         </div>
                         
                         <div className="w-full sm:w-auto flex flex-col items-start sm:items-end gap-1">
+                            <div className="flex gap-1 mb-1">
+                                {cit.feedsModels?.map((model, i) => (
+                                    <span key={i} className={`text-[8px] font-bold uppercase px-1.5 py-0.5 rounded border 
+                                        ${model.includes('Gemini') ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 
+                                          model.includes('ChatGPT') ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 
+                                          'bg-zinc-800 border-zinc-700 text-zinc-400'}`}>
+                                        {model}
+                                    </span>
+                                ))}
+                            </div>
                             <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${cit.priority === ImpactLevel.HIGH ? 'border-indigo-500/30 text-indigo-400 bg-indigo-500/10' : 'border-zinc-800 text-zinc-500'}`}>
                                 {cit.priority} Priority
                             </span>
-                            <p className="text-xs text-zinc-600 max-w-xs text-right sm:text-right font-mono">{cit.reason}</p>
+                            <p className="text-xs text-zinc-600 max-w-xs text-right sm:text-right font-mono mt-1">{cit.reason}</p>
                         </div>
                     </div>
                 ))}
@@ -763,6 +652,36 @@ const Dashboard: React.FC<Props> = ({ data, businessName, onReset }) => {
                     </div>
                 </div>
             </div>
+
+            {/* Feature: Hallucination Monitor (Fact Check) */}
+            {data.factCheck && data.factCheck.length > 0 && (
+                <div className="bg-surface border border-zinc-800 rounded-xl p-6 shadow-lg relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-teal-500 to-emerald-500"></div>
+                    <div className="mb-6">
+                        <h3 className="text-sm font-bold text-white mb-2 uppercase tracking-wide flex items-center gap-2">
+                            <CheckCircleIcon className="w-4 h-4 text-teal-500" />
+                            Hallucination Monitor (Fact Check)
+                        </h3>
+                        <p className="text-zinc-500 text-sm">
+                            We asked the AI specific factual questions about your business. Verify if these answers are correct. If not, the AI is "hallucinating" and you need to update your GMB/Website.
+                        </p>
+                    </div>
+                    <div className="space-y-2">
+                        {data.factCheck.map((fact, idx) => (
+                            <div key={idx} className="bg-zinc-900/50 border border-zinc-800 p-4 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                <div>
+                                    <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-1">Question</p>
+                                    <p className="text-sm font-medium text-white">{fact.question}</p>
+                                </div>
+                                <div className="bg-black/30 p-3 rounded w-full sm:w-1/2 border border-zinc-800/50">
+                                    <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider mb-1">AI's Answer</p>
+                                    <p className="text-sm text-zinc-300 italic">"{fact.aiAnswer}"</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Feature 5: Review Sentiment Training Data Audit */}
             <div className="bg-surface border border-zinc-800 rounded-xl p-6 shadow-lg relative overflow-hidden">
@@ -822,6 +741,183 @@ const Dashboard: React.FC<Props> = ({ data, businessName, onReset }) => {
      )
   }
 
+  const renderStudio = () => (
+    <div className="space-y-6 animate-slide-up">
+       <div className="bg-surface border border-zinc-800 rounded-xl p-6 shadow-lg relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+            <h3 className="text-sm font-bold text-zinc-300 mb-2 uppercase tracking-wide flex items-center gap-2 relative z-10">
+                <PenToolIcon className="w-4 h-4 text-indigo-400" />
+                AI Content Studio
+            </h3>
+            <p className="text-zinc-500 text-sm mb-6 relative z-10">
+                Auto-generated social content optimized for Generative Engine Optimization (GEO).
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
+                {data.contentStrategy?.map((post, idx) => (
+                    <div key={idx} className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-5 hover:border-indigo-500/30 transition-all flex flex-col h-full">
+                        <div className="flex justify-between items-start mb-4">
+                            <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border 
+                                ${post.platform === 'Instagram' ? 'bg-pink-500/10 border-pink-500/30 text-pink-400' : 
+                                  post.platform === 'LinkedIn' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 
+                                  'bg-green-500/10 border-green-500/30 text-green-400'}`}>
+                                {post.platform}
+                            </span>
+                            <button className="text-zinc-500 hover:text-white" onClick={() => navigator.clipboard.writeText(post.caption)}>
+                                <CopyIcon className="w-4 h-4" />
+                            </button>
+                        </div>
+                        
+                        <div className="mb-4 flex-grow">
+                            <p className="text-xs font-mono text-zinc-500 mb-2">Focus Keyword: <span className="text-zinc-300">{post.focusKeyword}</span></p>
+                            <div className="bg-black/30 p-3 rounded border border-zinc-800/50 text-xs text-zinc-300 italic mb-3">
+                                "{post.caption}"
+                            </div>
+                            <div className="flex flex-wrap gap-1 mb-3">
+                                {post.hashtags.map((tag, i) => (
+                                    <span key={i} className="text-[10px] text-indigo-400">#{tag}</span>
+                                ))}
+                            </div>
+                        </div>
+
+                         <div className="mt-auto pt-3 border-t border-zinc-800">
+                             <div className="flex items-start gap-2 mb-2">
+                                 <div className="w-4 h-4 rounded bg-zinc-800 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                      <SparklesIcon className="w-3 h-3 text-zinc-400" />
+                                 </div>
+                                 <p className="text-[10px] text-zinc-400 leading-tight">
+                                     <span className="font-bold text-zinc-300 block mb-0.5">Visual Idea:</span>
+                                     {post.imageIdea}
+                                 </p>
+                             </div>
+                             <p className="text-[10px] text-zinc-500 italic">
+                                 Why: {post.whyThisWorks}
+                             </p>
+                         </div>
+                    </div>
+                ))}
+            </div>
+       </div>
+    </div>
+  );
+
+  const renderLLMs = () => (
+    <div className="space-y-6 animate-slide-up">
+        <div className="bg-surface border border-zinc-800 rounded-xl p-6 shadow-lg">
+            <h3 className="text-sm font-bold text-zinc-300 mb-6 uppercase tracking-wide flex items-center gap-2">
+                <SparklesIcon className="w-4 h-4 text-purple-400" />
+                Large Language Model (LLM) Visibility
+            </h3>
+            <div className="space-y-4">
+                {data.llmPerformance?.map((llm, idx) => (
+                    <div key={idx} className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-5 flex flex-col md:flex-row items-start md:items-center gap-6 group hover:border-zinc-700 transition-all">
+                        <div className="flex-shrink-0">
+                            <div className={`w-16 h-16 rounded-xl flex items-center justify-center text-2xl font-bold border 
+                                ${llm.model === 'ChatGPT' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 
+                                  llm.model === 'Gemini' ? 'bg-blue-500/10 border-blue-500/20 text-blue-500' : 
+                                  'bg-amber-500/10 border-amber-500/20 text-amber-500'}`}>
+                                {llm.model[0]}
+                            </div>
+                        </div>
+                        <div className="flex-grow">
+                            <div className="flex items-center gap-3 mb-2">
+                                <h4 className="text-lg font-bold text-white">{llm.model}</h4>
+                                <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded border
+                                    ${llm.status === 'Top Choice' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 
+                                      llm.status === 'Option' ? 'bg-blue-500/10 border-blue-500/30 text-blue-400' : 
+                                      'bg-rose-500/10 border-rose-500/30 text-rose-400'}`}>
+                                    {llm.status}
+                                </span>
+                                <span className="text-xs text-zinc-500 font-mono">Score: {llm.score}/100</span>
+                            </div>
+                            <p className="text-sm text-zinc-400 leading-relaxed mb-3">
+                                {llm.details}
+                            </p>
+                             <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                                <div 
+                                    className={`h-full rounded-full ${llm.score >= 80 ? 'bg-emerald-500' : llm.score >= 50 ? 'bg-blue-500' : 'bg-rose-500'}`}
+                                    style={{ width: `${llm.score}%` }}
+                                ></div>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    </div>
+  );
+
+  const renderMap = () => (
+      <div className="space-y-6 animate-slide-up">
+           <div className="bg-surface border border-zinc-800 rounded-xl p-6 shadow-lg relative overflow-hidden h-[600px] flex flex-col">
+               <div className="mb-4 flex justify-between items-end">
+                    <div>
+                        <h3 className="text-sm font-bold text-zinc-300 uppercase tracking-wide flex items-center gap-2">
+                            <MapPinIcon className="w-4 h-4 text-emerald-500" />
+                            Competitor Landscape
+                        </h3>
+                        <p className="text-xs text-zinc-500 mt-1">Geospatial analysis of top 15 competitors.</p>
+                    </div>
+               </div>
+               
+               <div className="flex-grow rounded-lg overflow-hidden border border-zinc-700 relative">
+                   <Map 
+                       defaultCenter={[data.businessCoordinates.lat, data.businessCoordinates.lng]} 
+                       defaultZoom={13}
+                       provider={(x, y, z, dpr) => {
+                         return `https://mt1.google.com/vt/lyrs=m&x=${x}&y=${y}&z=${z}`
+                       }}
+                    >
+                        {/* Business Marker */}
+                        <Marker 
+                            width={50} 
+                            anchor={[data.businessCoordinates.lat, data.businessCoordinates.lng]} 
+                            color="#10b981" 
+                        />
+                         <Overlay anchor={[data.businessCoordinates.lat, data.businessCoordinates.lng]} offset={[0, 40]}>
+                            <div className="bg-emerald-500 text-black text-[10px] font-bold px-2 py-1 rounded shadow-lg whitespace-nowrap">
+                                YOU
+                            </div>
+                        </Overlay>
+
+                        {/* Competitors */}
+                        {data.localCompetitors?.map((comp, i) => (
+                             <MarkerAny 
+                                key={i}
+                                width={30} 
+                                anchor={[comp.lat, comp.lng]} 
+                                color="#6366f1"
+                                onClick={() => setHoveredCompetitor(comp)}
+                            />
+                        ))}
+                   </Map>
+
+                   {/* Hover Card Overlay */}
+                   {hoveredCompetitor && (
+                       <div className="absolute bottom-4 left-4 bg-zinc-900/90 backdrop-blur border border-zinc-700 p-4 rounded-lg shadow-xl w-64 animate-fade-in z-[1000]">
+                           <div className="flex justify-between items-start mb-2">
+                               <h4 className="font-bold text-white text-sm">{hoveredCompetitor.name}</h4>
+                               <button onClick={() => setHoveredCompetitor(null)} className="text-zinc-500 hover:text-white">
+                                   <StopIcon className="w-3 h-3" />
+                               </button>
+                           </div>
+                           <div className="space-y-1">
+                                <p className="text-xs text-zinc-400">Rank: <span className="text-indigo-400 font-bold">#{hoveredCompetitor.rank}</span></p>
+                                <p className="text-xs text-zinc-400">Distance: <span className="text-zinc-300">{hoveredCompetitor.distance}</span></p>
+                                {hoveredCompetitor.address && (
+                                     <p className="text-[10px] text-zinc-500 border-t border-zinc-800 pt-1 mt-1">
+                                        <span className="font-bold text-zinc-400">Verified Address:</span><br/>
+                                        {hoveredCompetitor.address}
+                                     </p>
+                                )}
+                           </div>
+                       </div>
+                   )}
+               </div>
+           </div>
+      </div>
+  );
+
   return (
     <div className="space-y-8 pb-12">
       {/* Header */}
@@ -849,6 +945,7 @@ const Dashboard: React.FC<Props> = ({ data, businessName, onReset }) => {
             { id: 'overview', label: 'Overview' },
             { id: 'studio', label: 'Creator Studio', icon: <PenToolIcon className="w-4 h-4 text-indigo-400" /> },
             { id: 'missions', label: 'Missions', icon: <FlameIcon className="w-4 h-4 text-orange-500" /> },
+            { id: 'visual', label: 'Visual', icon: <SparklesIcon className="w-4 h-4 text-emerald-500" /> },
             { id: 'deepdive', label: 'Deep Dive' },
             { id: 'llms', label: 'Models' },
             { id: 'map', label: 'Map' },
@@ -867,6 +964,7 @@ const Dashboard: React.FC<Props> = ({ data, businessName, onReset }) => {
               {tab.label}
               {tab.id === 'missions' && completedMissions.length === 0 && <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>}
               {tab.id === 'studio' && <span className="text-[9px] bg-indigo-500 text-white px-1 rounded ml-1">NEW</span>}
+              {tab.id === 'visual' && <span className="text-[9px] bg-emerald-500 text-white px-1 rounded ml-1">NEW</span>}
             </button>
           ))}
         </nav>
@@ -877,6 +975,7 @@ const Dashboard: React.FC<Props> = ({ data, businessName, onReset }) => {
         {activeTab === 'overview' && renderOverview()}
         {activeTab === 'studio' && renderStudio()}
         {activeTab === 'missions' && renderMissions()}
+        {activeTab === 'visual' && renderVisual()}
         {activeTab === 'deepdive' && renderDeepDive()}
         {activeTab === 'llms' && renderLLMs()}
         {activeTab === 'map' && renderMap()}
