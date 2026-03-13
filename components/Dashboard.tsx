@@ -883,13 +883,21 @@ const Dashboard: React.FC<Props> = ({ data, businessName, onReset }) => {
                                             </div>
 
                                             <div className="grid grid-cols-2 gap-2 mt-3 relative z-10">
-                                                <div className="bg-zinc-900/80 rounded p-2 border border-zinc-800">
-                                                    <span className="block text-[9px] uppercase tracking-widest text-zinc-500 mb-0.5">Google Volume</span>
-                                                    <span className="font-mono text-zinc-300 text-sm">{k.searchVolume?.toLocaleString()}</span>
+                                                <div className="bg-blue-500/10 rounded p-2 border border-blue-500/20">
+                                                    <span className="block text-[9px] uppercase tracking-widest text-blue-400/80 mb-0.5">Gemini</span>
+                                                    <span className="font-mono text-blue-300 font-bold text-sm">{k.llmPromptVolumes?.gemini?.toLocaleString() ?? '—'}</span>
+                                                </div>
+                                                <div className="bg-emerald-500/10 rounded p-2 border border-emerald-500/20">
+                                                    <span className="block text-[9px] uppercase tracking-widest text-emerald-400/80 mb-0.5">ChatGPT</span>
+                                                    <span className="font-mono text-emerald-300 font-bold text-sm">{k.llmPromptVolumes?.chatgpt?.toLocaleString() ?? '—'}</span>
+                                                </div>
+                                                <div className="bg-violet-500/10 rounded p-2 border border-violet-500/20">
+                                                    <span className="block text-[9px] uppercase tracking-widest text-violet-400/80 mb-0.5">Claude</span>
+                                                    <span className="font-mono text-violet-300 font-bold text-sm">{k.llmPromptVolumes?.claude?.toLocaleString() ?? '—'}</span>
                                                 </div>
                                                 <div className="bg-amber-500/10 rounded p-2 border border-amber-500/20 shadow-inner">
-                                                    <span className="block text-[9px] uppercase tracking-widest text-amber-500/80 mb-0.5">Prompt Volume (Est)</span>
-                                                    <span className="font-mono text-amber-400 font-bold text-lg leading-none">{k.estimatedPromptVolume?.toLocaleString()}</span>
+                                                    <span className="block text-[9px] uppercase tracking-widest text-amber-400/80 mb-0.5">Perplexity</span>
+                                                    <span className="font-mono text-amber-300 font-bold text-sm">{k.llmPromptVolumes?.perplexity?.toLocaleString() ?? '—'}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -922,13 +930,21 @@ const Dashboard: React.FC<Props> = ({ data, businessName, onReset }) => {
                                             </div>
 
                                             <div className="grid grid-cols-2 gap-2 mt-3 relative z-10">
-                                                <div className="bg-zinc-900/80 rounded p-2 border border-zinc-800">
-                                                    <span className="block text-[9px] uppercase tracking-widest text-zinc-500 mb-0.5">Google Volume</span>
-                                                    <span className="font-mono text-zinc-300 text-sm">{k.searchVolume?.toLocaleString()}</span>
+                                                <div className="bg-blue-500/10 rounded p-2 border border-blue-500/20">
+                                                    <span className="block text-[9px] uppercase tracking-widest text-blue-400/80 mb-0.5">Gemini</span>
+                                                    <span className="font-mono text-blue-300 font-bold text-sm">{k.llmPromptVolumes?.gemini?.toLocaleString() ?? '—'}</span>
+                                                </div>
+                                                <div className="bg-emerald-500/10 rounded p-2 border border-emerald-500/20">
+                                                    <span className="block text-[9px] uppercase tracking-widest text-emerald-400/80 mb-0.5">ChatGPT</span>
+                                                    <span className="font-mono text-emerald-300 font-bold text-sm">{k.llmPromptVolumes?.chatgpt?.toLocaleString() ?? '—'}</span>
+                                                </div>
+                                                <div className="bg-violet-500/10 rounded p-2 border border-violet-500/20">
+                                                    <span className="block text-[9px] uppercase tracking-widest text-violet-400/80 mb-0.5">Claude</span>
+                                                    <span className="font-mono text-violet-300 font-bold text-sm">{k.llmPromptVolumes?.claude?.toLocaleString() ?? '—'}</span>
                                                 </div>
                                                 <div className="bg-indigo-500/10 rounded p-2 border border-indigo-500/20 shadow-inner">
-                                                    <span className="block text-[9px] uppercase tracking-widest text-indigo-400/80 mb-0.5">Prompt Volume (Est)</span>
-                                                    <span className="font-mono text-indigo-400 font-bold text-lg leading-none">{k.estimatedPromptVolume?.toLocaleString()}</span>
+                                                    <span className="block text-[9px] uppercase tracking-widest text-indigo-400/80 mb-0.5">Perplexity</span>
+                                                    <span className="font-mono text-indigo-300 font-bold text-sm">{k.llmPromptVolumes?.perplexity?.toLocaleString() ?? '—'}</span>
                                                 </div>
                                             </div>
                                         </div>

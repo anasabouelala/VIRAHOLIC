@@ -284,11 +284,13 @@ export const analyzeBusinessVisibility = async (business: BusinessInfo, geminiKe
     
     3. SENTIMENT AUDIT: Use the "Verified Reputation & Sentiment" payload. If "hasReviews" is true, analyze their rating (e.g., lower than 4.0 means trouble), review volume, and explicitly map the "negativeThemes" into the negativeEntities array to calculate a toxicityScore (0-100, where 0 is perfect/clean and higher means severe toxicity or frequent complaints). If "hasReviews" is false, set toxicityScore to 0, negativeEntities to an empty array [], and summary to "No verifiable review data available in this scan."
     
-    4. KEYWORD HEIST: You DO NOT have access to live search volume data yet. Deduce 4-6 logical broad keywords based on their Category. Estimate a realistic monthly "Traditional Search Volume" integer (e.g., 5000). Classify each keyword's intent as "Navigational", "Commercial", or "Deep Research". Calculate the 'estimatedPromptVolume' mathematically:
-       - Navigational: traditional searchVolume * 0.02
-       - Commercial: traditional searchVolume * 0.12
-       - Deep Research: traditional searchVolume * 0.35
-       Return the calculated integer for 'estimatedPromptVolume'. 
+    4. KEYWORD HEIST: Deduce 4-6 logical broad keywords based on their Category. Classify each keyword's intent as "Navigational", "Commercial", or "Deep Research". For each keyword, estimate the monthly prompt volume for each major LLM using this methodology:
+       - Start with a realistic base monthly AI prompt volume for this category/location (e.g., 800 for a niche local service, 5000 for a popular restaurant).
+       - Then split it across LLMs using their approximate real-world market share weights **for this intent type**:
+         * Gemini: higher share for "Navigational" (mobile/voice heavy) — commercial~25%, navigational~35%, deep_research~20%
+         * ChatGPT: dominant for "Commercial" and "Deep Research" — commercial~45%, navigational~30%, deep_research~40%
+         * Claude: growing for research-heavy tasks — commercial~15%, navigational~10%, deep_research~25%
+         * Perplexity: dominant for "Deep Research" — commercial~15%, navigational~25%, deep_research~15%
        CRITICAL: You must define 'owner' logically based on the business's visibility. If the business is a "Digital Ghost" (poor scores), assign ALL keywords to "Competitor". If the business HAS a website and GBP, assign at least 1 or 2 niche keywords to "You" or "Shared" and the bigger harder keywords to "Competitor".
     
     5. SIMULATIONS & PERSONAS: If the business has a terrible visibility score, the \`aiResponse\` and \`aiResponseSummary\` in your simulations MUST reflect failure (e.g., "The AI recommended competitors instead", "The AI could not find information on this business"). Do not write optimistic fake AI responses.
@@ -532,12 +534,20 @@ export const analyzeBusinessVisibility = async (business: BusinessInfo, geminiKe
                 properties: {
                   term: { type: Type.STRING },
                   owner: { type: Type.STRING, enum: ['Competitor', 'You', 'Shared'] },
-                  searchVolume: { type: Type.NUMBER },
                   intent: { type: Type.STRING, enum: ['Navigational', 'Commercial', 'Deep Research'] },
-                  estimatedPromptVolume: { type: Type.NUMBER },
+                  llmPromptVolumes: {
+                    type: Type.OBJECT,
+                    properties: {
+                      gemini: { type: Type.NUMBER },
+                      chatgpt: { type: Type.NUMBER },
+                      claude: { type: Type.NUMBER },
+                      perplexity: { type: Type.NUMBER }
+                    },
+                    required: ['gemini', 'chatgpt', 'claude', 'perplexity']
+                  },
                   opportunityScore: { type: Type.NUMBER }
                 },
-                required: ["term", "owner", "searchVolume", "intent", "estimatedPromptVolume", "opportunityScore"]
+                required: ["term", "owner", "intent", "llmPromptVolumes", "opportunityScore"]
               }
             },
             sentimentAudit: {

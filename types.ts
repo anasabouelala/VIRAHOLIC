@@ -84,12 +84,18 @@ export interface LocalCompetitorLocation {
 }
 
 // Feature 3: Keyword Heist
+export interface LLMPromptVolume {
+  gemini: number;
+  chatgpt: number;
+  claude: number;
+  perplexity: number;
+}
+
 export interface KeywordGap {
   term: string;
   owner: 'Competitor' | 'You' | 'Shared';
-  searchVolume: number;
   intent: 'Navigational' | 'Commercial' | 'Deep Research';
-  estimatedPromptVolume: number;
+  llmPromptVolumes: LLMPromptVolume; // Per-LLM estimated monthly prompt volume
   opportunityScore: number; // 0-100
 }
 
