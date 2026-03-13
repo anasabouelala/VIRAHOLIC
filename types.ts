@@ -66,6 +66,7 @@ export interface CitationOpportunity {
   type: 'Directory' | 'Social' | 'Forum' | 'Health/Niche' | 'LLM Data Source';
   priority: ImpactLevel;
   reason: string;
+  isListed: boolean;
   feedsModels: string[]; // e.g. ["Gemini", "ChatGPT"]
 }
 
@@ -76,14 +77,19 @@ export interface LocalCompetitorLocation {
   lat: number;
   lng: number;
   address?: string; // Verified address
-  sourceUrl?: string; // Where this competitor was found
+  sourceUrl: string; // REQUIRED: Where this competitor was found (Must be valid URL)
+  rating?: number; // e.g., 4.8
+  reviewCount?: number; // e.g., 150
+  profileCompleteness?: number; // 0-100 percentage based on GBP features
 }
 
 // Feature 3: Keyword Heist
 export interface KeywordGap {
   term: string;
   owner: 'Competitor' | 'You' | 'Shared';
-  searchVolume: 'High' | 'Medium' | 'Low';
+  searchVolume: number;
+  intent: 'Navigational' | 'Commercial' | 'Deep Research';
+  estimatedPromptVolume: number;
   opportunityScore: number; // 0-100
 }
 
@@ -137,8 +143,12 @@ export interface VisualAnalysis {
   overallVibe: string;
   score: number;
   detectedTags: string[];
+  missingCrucialEntities: string[];
+  intentScores: { intent: string; score: number }[];
+  extractedText: string[];
+  qualityWarning?: string;
   improvements: string;
-  source: 'Upload' | 'GMB_Scan' | 'Not_Found'; // Added Not_Found
+  source: 'Upload' | 'GMB_Scan' | 'Not_Found';
 }
 
 // Feature: Hallucination Monitor
@@ -146,6 +156,15 @@ export interface FactCheckItem {
   question: string; // e.g., "Is there parking?"
   aiAnswer: string; // "Yes, free parking available."
   confidence: string; // "High" | "Low"
+  sourceUrl: string; // REQUIRED: URL verifying this fact
+}
+
+// Feature: Hallucination Wall
+export interface HallucinationWallResult {
+  status: 'Verified' | 'Hallucinated' | 'Unverifiable';
+  claim: string;
+  truth: string;
+  sourceUrl?: string; // Where the reality check comes from
 }
 
 // Feature: PAA Hijacker
@@ -165,6 +184,11 @@ export interface MarketOverview {
 }
 
 export interface AnalysisResult {
+  reasoningChain: {
+    layer1_DataIngestion: string;
+    layer2_VisibilityMath: string;
+    layer3_SimulationAlignment: string;
+  };
   overallScore: number;
   summary: string;
   attributes: {
@@ -178,13 +202,13 @@ export interface AnalysisResult {
   personas: PersonaSimulation[];
   contentGaps: ContentGap[];
   platformPerformance: PlatformPerformance[];
-  
+
   // New Fields
   llmPerformance: LLMPerformance[];
   citationOpportunities: CitationOpportunity[];
   localCompetitors: LocalCompetitorLocation[];
   businessCoordinates: { lat: number; lng: number };
-  
+
   // High Value Features
   keywordHeist: KeywordGap[];
   sentimentAudit: {
@@ -192,17 +216,18 @@ export interface AnalysisResult {
     negativeEntities: NegativeEntity[];
     summary: string;
   };
-  
+
   // Recurring Usage
   dailyMissions: DailyMission[];
-  
+
   // SaaS Value Features
   contentStrategy: SocialPostIdea[];
   voiceSimulation: VoiceSimulation;
-  
+
   // Latest Features
   visualAudit?: VisualAnalysis;
   factCheck?: FactCheckItem[];
+  hallucinationWall?: HallucinationWallResult[];
   voiceSearchQA?: VoiceQAPair[];
   marketOverview?: MarketOverview;
 
