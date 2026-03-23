@@ -1,0 +1,28 @@
+@keyframes sonic-pulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+.animate-sonic {
+  animation: sonic-pulse 3s cubic-bezier(0, 0, 0.2, 1) infinite;
+  transform-origin: center;
+}
+
+.delay-1 {
+  animation-delay: 1s;
+}
+
+.delay-2 {
+  animation-delay: 2s;
+}
+
+.blur-layer {
+  filter: blur(40px);
+  opacity: 0.4;
+}

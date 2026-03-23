@@ -86,6 +86,55 @@
     ::-webkit-scrollbar-thumb:hover {
       background: #3f3f46;
     }
+
+    /* Map Animations */
+    @keyframes sonic-pulse {
+      0% {
+        transform: scale(0.5);
+        opacity: 0.8;
+      }
+      100% {
+        transform: scale(2.5);
+        opacity: 0;
+      }
+    }
+
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 0.1; transform: scale(0.98); }
+      50% { opacity: 0.3; transform: scale(1.02); }
+    }
+
+    .pulse-subtle {
+      animation: pulse-subtle 4s ease-in-out infinite;
+    }
+
+    .animate-sonic-fast {
+      animation: sonic-pulse 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+      transform-origin: center;
+    }
+
+    .animate-sonic-med {
+      animation: sonic-pulse 3s cubic-bezier(0, 0, 0.2, 1) infinite;
+      transform-origin: center;
+    }
+
+    .animate-sonic-slow {
+      animation: sonic-pulse 5s cubic-bezier(0, 0, 0.2, 1) infinite;
+      transform-origin: center;
+    }
+
+    .animate-sonic {
+      animation: sonic-pulse 3s cubic-bezier(0, 0, 0.2, 1) infinite;
+      transform-origin: center;
+    }
+
+    .delay-1 {
+      animation-delay: 1s;
+    }
+
+    .delay-2 {
+      animation-delay: 2s;
+    }
   </style>
   <script type="importmap">
 {
@@ -100,7 +149,6 @@
   }
 }
 </script>
-  <link rel="stylesheet" href="/index.css">
 </head>
 
 <body class="bg-background text-zinc-100 antialiased selection:bg-white selection:text-black">

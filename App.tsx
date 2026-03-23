@@ -4,6 +4,7 @@ import { AnalysisResult, AnalysisState, BusinessInfo } from './types';
 import BusinessForm from './components/BusinessForm';
 import Dashboard from './components/Dashboard';
 import LoadingScreen from './components/LoadingScreen';
+import ErrorBoundary from './components/ErrorBoundary';
 import { analyzeBusinessVisibility } from './services/geminiService';
 import { SparklesIcon, GearIcon } from './components/Icons';
 
@@ -164,11 +165,14 @@ const App: React.FC = () => {
               <BusinessForm onSubmit={handleAnalysisRequest} isLoading={state.loading} />
             </div>
           ) : (
-            <Dashboard
-              data={state.result}
-              businessName={businessName}
-              onReset={handleReset}
-            />
+            <ErrorBoundary>
+              <Dashboard
+                data={state.result}
+                businessName={businessName}
+                onReset={handleReset}
+                geminiApiKey={geminiKey}
+              />
+            </ErrorBoundary>
           )}
 
         </div>

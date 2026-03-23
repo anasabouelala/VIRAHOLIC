@@ -5,7 +5,7 @@ export interface BusinessInfo {
   category: string;
   website?: string;
   keywords?: string;
-  images?: string[]; // Array of Base64 strings
+  language?: string;
 }
 
 export interface Simulation {
@@ -53,11 +53,46 @@ export interface PlatformPerformance {
 }
 
 // New Types
+export interface TestedPrompt {
+  text: string;
+  intent: 'Discovery' | 'Comparison' | 'Alternatives' | 'Local' | 'Other';
+  appears: boolean;
+  competitorsShown: string[];
+}
+
+export interface CompetitorReplacement {
+  name: string;
+  appearancePercentage: number;
+  examplePrompts: string[];
+}
+
+export interface VisibilityByIntent {
+  intent: 'Discovery' | 'Comparison' | 'Alternatives' | 'Local' | 'Other';
+  total: number;
+  appeared: number;
+}
+
+export interface GlobalLLMInsight {
+  summary: string;
+  visibilityByIntent: VisibilityByIntent[];
+  entityConfidenceScore: number;
+  entitySignals: string[];
+  visibilityPotential: string;
+}
+
 export interface LLMPerformance {
-  model: 'ChatGPT' | 'Gemini' | 'Perplexity';
+  model: 'ChatGPT' | 'Gemini' | 'Perplexity' | 'Claude' | string;
   status: 'Top Choice' | 'Option' | 'Hidden';
-  details: string;
+  details: string; // Used for short original description
   score: number; // 0-100 visibility score
+  // diagnostic features
+  promptsTested?: number;
+  promptsAppeared?: number;
+  topPromptsAppeared?: string[];
+  topPromptsMissed?: string[];
+  competitorReplacements?: CompetitorReplacement[];
+  behaviorInsight?: string;
+  testedPrompts?: TestedPrompt[];
 }
 
 export interface CitationOpportunity {
@@ -114,13 +149,12 @@ export interface AttributeDetail {
   action: string; // Immediate next step
 }
 
-// Recurring Usage Feature: Daily Missions
+// Action items for the user
 export interface DailyMission {
   id: string;
   title: string;
   description: string;
-  xp: number; // Gamification points 10-50
-  category: 'Content' | 'Review' | 'Social';
+  category: 'Presence' | 'Citations' | 'Reputation' | 'Content' | 'AEO Tech';
   estimatedTime: string; // e.g. "2 mins"
 }
 
@@ -155,6 +189,40 @@ export interface VisualAnalysis {
   qualityWarning?: string;
   improvements: string;
   source: 'Upload' | 'GMB_Scan' | 'Not_Found';
+  imageUrls?: string[]; // Auto-fetched Google Maps CDN image URLs
+}
+
+// Feature: Vocal Search Analysis
+export interface VocalSearchAnalysis {
+  overallVoiceScore: number; // 0-100
+  voiceReadinessLabel: 'Voice Ready' | 'Partially Optimized' | 'Voice Invisible';
+
+  simulatedVoiceAnswers: {
+    assistant: 'Alexa' | 'Siri' | 'Google Assistant';
+    query: string;
+    response: string;
+    verdict: 'Mentions Business' | 'Recommends Competitor' | 'No Answer';
+  }[];
+
+  voiceQAPairs: {
+    question: string;
+    optimizedAnswer: string; // Max 40 words, starts with business name
+    intent: 'Discovery' | 'Transactional' | 'Navigational';
+    schemaType: 'FAQPage' | 'HowTo' | 'LocalBusiness';
+  }[];
+
+  schemaGaps: {
+    type: string; // e.g. "FAQPage", "LocalBusiness"
+    severity: 'Critical' | 'High' | 'Low';
+    reasoning: string;
+    snippet: string; // Exact JSON-LD code to paste
+  }[];
+
+  voiceKeywords: {
+    phrase: string;
+    monthlyVoiceSearches: number;
+    currentlyRanking: boolean;
+  }[];
 }
 
 // Feature: Hallucination Monitor
@@ -210,6 +278,7 @@ export interface AnalysisResult {
   platformPerformance: PlatformPerformance[];
 
   // New Fields
+  globalLLMInsight?: GlobalLLMInsight;
   llmPerformance: LLMPerformance[];
   citationOpportunities: CitationOpportunity[];
   localCompetitors: LocalCompetitorLocation[];
@@ -232,6 +301,7 @@ export interface AnalysisResult {
 
   // Latest Features
   visualAudit?: VisualAnalysis;
+  vocalSearch?: VocalSearchAnalysis;
   factCheck?: FactCheckItem[];
   hallucinationWall?: HallucinationWallResult[];
   voiceSearchQA?: VoiceQAPair[];
