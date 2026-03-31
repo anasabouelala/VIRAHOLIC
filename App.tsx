@@ -322,7 +322,7 @@ const App: React.FC = () => {
                           brandName={currentProject?.brand_name}
                           userEmail={session?.user?.email}
                           planName={userProfile?.plan_name}
-                          auditsUsed={projects.length}
+                          auditsUsed={projects.filter(p => !p.name?.includes('(DEMO)')).length}
                           promptsUsed={0}
                           onAddProject={() => setShowNewProjectModal(true)}
                           onSettings={() => setShowProjectSettingsModal(true)}
