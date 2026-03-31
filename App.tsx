@@ -120,11 +120,12 @@ const App: React.FC = () => {
     if (data) setUserProfile(data);
   };
 
-  const loadProjects = async (userId: string) => {
+  const loadProjects = async (userId: string, allowAutoCreate: boolean = true) => {
     let data = await getProjects(userId);
     
     // Auto-migrate landing page audits to the user's account by building a default project for them
-    if (data.length === 0 && latestResult.current && latestBusinessName.current) {
+    // ONLY if we're allowed to and it's not a deletion cleanup
+    if (allowAutoCreate && data.length === 0 && latestResult.current && latestBusinessName.current) {
       const { data: newProject, success } = await createProject(userId, latestBusinessName.current, latestBusinessName.current);
       if (success && newProject) {
           data = [newProject];
@@ -291,13 +292,16 @@ const App: React.FC = () => {
   const handleDeleteProject = async (projectId: string) => {
     const { success } = await deleteProject(projectId);
     if (success) {
-      if (session) {
-        await loadProjects(session.user.id);
-      }
       if (currentProject?.id === projectId) {
+        // Clear in-memory result BEFORE loading projects to avoid auto-recreation
         setCurrentProject(null);
         setState({ loading: false, error: null, result: null });
         setBusinessName('');
+      }
+      
+      if (session) {
+        // Skip auto-creation because this is an explicit deletion
+        await loadProjects(session.user.id, false);
       }
     } else {
       console.error('Failed to delete project');
