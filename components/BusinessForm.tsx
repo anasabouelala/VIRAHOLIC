@@ -147,10 +147,10 @@ const BusinessForm: React.FC<Props> = ({ onSubmit, onDemo, isLoading, hideDemo, 
                 type="button"
                 onClick={onDemo}
                 disabled={isLoading}
-                className="flex-[1.5] py-4 px-6 rounded-lg font-bold text-xs tracking-[0.2em] uppercase transition-all bg-indigo-600/10 border border-indigo-500/30 text-indigo-400 hover:bg-indigo-600/20 hover:text-white hover:border-indigo-400/50 active:scale-95 flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(99,102,241,0.1)] group"
+                className="flex-[1.5] py-4 px-6 rounded-lg font-bold text-xs tracking-[0.2em] uppercase transition-all bg-amber-500/10 border border-amber-500/30 text-amber-400 hover:bg-amber-600 hover:text-white hover:border-amber-500/50 active:scale-95 flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(245,158,11,0.1)] group"
               >
                 <NetworkIcon className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                EXPLORE LIVE SAMPLE
+                CHECK THE DEMO
               </button>
             )}
           </div>
