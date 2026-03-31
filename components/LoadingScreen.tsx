@@ -3,39 +3,39 @@ import { TargetIcon, ActivityIcon, SparklesIcon, CheckCircleIcon, MapPinIcon, Gl
 
 const loadingSteps = [
     { 
-        title: "Locating Business", 
-        desc: "Scanning Google Maps & Google Business Profile", 
+        title: "Initializing 12 AEO Agents", 
+        desc: "Activating specialized LLM diagnostic nodes...", 
         icon: <SearchIcon className="w-5 h-5" /> 
     },
     { 
-        title: "Analyzing Competitors", 
-        desc: "Mapping local radius and ranking competitors", 
+        title: "Mapping 'Invisible Index'", 
+        desc: "Crawling retrieval datasets across ChatGPT & Gemini...", 
         icon: <TargetIcon className="w-5 h-5" /> 
     },
     { 
-        title: "Checking Citations", 
-        desc: "Verifying niche-specific directories", 
+        title: "Cross-Agent Hallucination Check", 
+        desc: "Verifying business factuality across contradictory weights...", 
+        icon: <AlertCircleIcon className="w-5 h-5" /> 
+    },
+    { 
+        title: "GEO-Intent Node Simulation", 
+        desc: "Virtualized location-radius scanning in Manhattan & local nodes...", 
+        icon: <MapPinIcon className="w-5 h-5" /> 
+    },
+    { 
+        title: "Voice Syntax Analysis", 
+        desc: "Scoring brand phonetics for Siri & Alexa assistants...", 
         icon: <GlobeIcon className="w-5 h-5" /> 
     },
     { 
-        title: "Testing AI Models", 
-        desc: "Querying ChatGPT, Gemini & Perplexity", 
-        icon: <ActivityIcon className="w-5 h-5" /> 
-    },
-    { 
-        title: "Visual Processing", 
-        desc: "Running Deep Vision Engine on images", 
+        title: "Sentiment Contamination Scan", 
+        desc: "Detecting negative bias in static training data...", 
         icon: <SparklesIcon className="w-5 h-5" /> 
     },
     { 
-        title: "Scoring & Strategy", 
-        desc: "Generating AEO scores & daily missions", 
+        title: "Compiling Diagnostic Suite", 
+        desc: "Finalizing the $2000-grade forensic audit report...", 
         icon: <ActivityIcon className="w-5 h-5" /> 
-    },
-    { 
-        title: "Fact-Checking", 
-        desc: "Running zero-hallucination data verification", 
-        icon: <AlertCircleIcon className="w-5 h-5" /> 
     }
 ];
 
@@ -118,11 +118,11 @@ const LoadingScreen: React.FC = () => {
             <div className="w-full bg-surface border border-zinc-800/60 rounded-2xl p-6 sm:p-10 shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl mix-blend-screen pointer-events-none"></div>
                 
-                <h2 className="text-xl sm:text-2xl font-black text-white mb-2 text-center tracking-tight">
-                    Generating Forensic Report
+                <h2 className="text-xl sm:text-2xl font-black text-white mb-2 text-center tracking-tight italic uppercase">
+                    Auditing Entity Intelligence
                 </h2>
-                <p className="text-zinc-400 text-xs sm:text-sm text-center mb-8 max-w-sm mx-auto leading-relaxed">
-                    Our AI agents are securely crawling search engines, directores, and LLM behavior to map your visibility.
+                <p className="text-zinc-500 text-xs sm:text-sm text-center mb-8 max-w-sm mx-auto leading-relaxed border-b border-white/5 pb-4">
+                    Orchestrating 12 independent AI agents to map your "Invisible Index" profile and Geo-Intent visibility.
                 </p>
 
                 <div className="space-y-4 sm:space-y-5">

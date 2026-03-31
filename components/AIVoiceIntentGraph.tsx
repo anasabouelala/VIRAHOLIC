@@ -93,9 +93,18 @@ const AIVoiceIntentGraph: React.FC<AIVoiceIntentGraphProps> = ({ businessName, c
     <div className="w-full relative rounded-xl border border-zinc-800/60 bg-zinc-950 flex flex-col">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border-b border-zinc-800/60 z-20 bg-zinc-950 rounded-t-xl">
-            <div>
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-1">AI Share of Voice & Intent</h3>
-                <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono">Conversational Search Survival</p>
+            <div className="flex items-center gap-2">
+                <div>
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-1">AI Share of Voice & Intent</h3>
+                    <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono">Conversational Search Survival</p>
+                </div>
+                <div className="group/tooltip relative flex items-center justify-center ml-2">
+                    <AlertCircleIcon className="w-4 h-4 text-zinc-500 cursor-help hover:text-indigo-400 transition-colors" />
+                    <div className="absolute bottom-full left-0 mb-2 w-72 p-3 bg-zinc-900 border border-zinc-700 rounded-lg text-xs text-zinc-300 opacity-0 group-hover/tooltip:opacity-100 transition-all pointer-events-none z-50 shadow-2xl backdrop-blur-md hidden sm:block">
+                        <strong className="text-white block mb-1">Survival Analysis</strong>
+                        This simulates a 4-stage conversational search. Users start with <strong>Broad Discovery</strong> (e.g. "coffee shop in SF") and move towards <strong>Hot Intent</strong> (e.g. "quiet place with reliable Wi-Fi and outlets"). Your brand's survival depends on how well you match specific semantic intents.
+                    </div>
+                </div>
             </div>
         </div>
 

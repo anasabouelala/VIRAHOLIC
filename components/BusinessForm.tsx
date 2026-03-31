@@ -5,18 +5,18 @@ import { MapPinIcon, GlobeIcon, SearchIcon, SparklesIcon, GlobeIcon as NetworkIc
 
 interface Props {
   onSubmit: (info: BusinessInfo) => void;
+  onDemo?: () => void;
   isLoading: boolean;
+  hideDemo?: boolean;
+  initialInfo: BusinessInfo;
+  onInfoChange: (info: BusinessInfo) => void;
 }
 
-const BusinessForm: React.FC<Props> = ({ onSubmit, isLoading }) => {
-  const [info, setInfo] = useState<BusinessInfo>({
-    name: '',
-    location: '',
-    category: '',
-    website: '',
-    keywords: '',
-    language: 'English'
-  });
+const BusinessForm: React.FC<Props> = ({ onSubmit, onDemo, isLoading, hideDemo, initialInfo, onInfoChange }) => {
+  const info = initialInfo;
+  const setInfo = (update: (prev: BusinessInfo) => BusinessInfo) => {
+    onInfoChange(update(info));
+  };
 
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -123,25 +123,36 @@ const BusinessForm: React.FC<Props> = ({ onSubmit, isLoading }) => {
 
           </div>
 
-          <div className="pt-2">
+          <div className="pt-2 flex flex-col sm:flex-row gap-4">
             <button
               type="submit"
               disabled={isLoading}
-              className={`w-full py-4 px-6 rounded-lg font-bold text-sm tracking-wide transition-all
+              className={`flex-[2] py-4 px-6 rounded-lg font-bold text-xs tracking-[0.2em] uppercase transition-all active:scale-95
                 ${isLoading
                   ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700'
-                  : 'bg-white text-black hover:bg-zinc-200 border border-transparent shadow-[0_0_15px_rgba(255,255,255,0.1)]'
+                  : 'bg-emerald-500 text-white hover:bg-emerald-400 border border-emerald-400/20 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
                 }`}
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <span className="w-4 h-4 border-2 border-zinc-400 border-t-zinc-800 rounded-full animate-spin"></span>
-                  SCANNING AI CITATIONS...
+                  <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                  SCANNING...
                 </span>
               ) : (
-                'RUN FREE AEO AUDIT'
+                'RUN YOUR AUDIT'
               )}
             </button>
+            {!hideDemo && onDemo && (
+              <button
+                type="button"
+                onClick={onDemo}
+                disabled={isLoading}
+                className="flex-[1.5] py-4 px-6 rounded-lg font-bold text-xs tracking-[0.2em] uppercase transition-all bg-indigo-600/10 border border-indigo-500/30 text-indigo-400 hover:bg-indigo-600/20 hover:text-white hover:border-indigo-400/50 active:scale-95 flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(99,102,241,0.1)] group"
+              >
+                <NetworkIcon className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                EXPLORE LIVE SAMPLE
+              </button>
+            )}
           </div>
         </form>
       </div>

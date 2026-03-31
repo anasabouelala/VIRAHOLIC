@@ -36,8 +36,8 @@ export const DEMO_DATA: AnalysisResult = {
         citations: {
             score: 86,
             label: "Solid",
-            explanation: "Strong presence on all Tier 1 platforms.",
-            action: "Add structured data for current seasonal hours."
+            explanation: "Visible on all Tier 1 platforms, but lacking presence in local niche lifestyle guides and Apple Maps Business Connect.",
+            action: "Sync structured data with Apple Maps and 12+ local San Francisco high-authority directories."
         }
     },
     simulations: [
@@ -178,6 +178,42 @@ export const DEMO_DATA: AnalysisResult = {
             reason: "Heavily utilized by Perplexity for local curation.",
             isListed: true,
             feedsModels: ["Perplexity", "Gemini"]
+        },
+        {
+            siteName: "SF Chronicle Best Of",
+            domain: "sfchronicle.com",
+            type: "LLM Data Source",
+            priority: ImpactLevel.HIGH,
+            reason: "Primary grounding source for Claude and GPT research agents.",
+            isListed: false,
+            feedsModels: ["Claude", "ChatGPT"]
+        },
+        {
+            siteName: "Apple Maps Connect",
+            domain: "mapsconnect.apple.com",
+            type: "Directory",
+            priority: ImpactLevel.HIGH,
+            reason: "The absolute source of truth for all Siri local search results.",
+            isListed: true,
+            feedsModels: ["Siri"]
+        },
+        {
+            siteName: "Foursquare City Guide",
+            domain: "foursquare.com",
+            type: "Directory",
+            priority: ImpactLevel.MEDIUM,
+            reason: "Provides 'WiFi' and 'Vibe' metadata to open-source LLM layers.",
+            isListed: false,
+            feedsModels: ["Llama 3", "Grok"]
+        },
+        {
+            siteName: "SF.gov Local Registry",
+            domain: "sf.gov",
+            type: "LLM Data Source",
+            priority: ImpactLevel.HIGH,
+            reason: "Increases trust scores for 'Official Entity' classification in Gemini.",
+            isListed: true,
+            feedsModels: ["Gemini"]
         }
     ],
     localCompetitors: [
@@ -311,6 +347,24 @@ export const DEMO_DATA: AnalysisResult = {
             description: "Competitors are winning on 'Remote Work' terms. Add 'High-Speed Internet' to business attributes.",
             impact: ImpactLevel.HIGH,
             actionItem: "Update metadata in Google Business Profile."
+        },
+        {
+            title: "Entity Authority Injection",
+            description: "Claim your profile on SF Chronicle's business index to anchor your brand to SF Coffee history.",
+            impact: ImpactLevel.HIGH,
+            actionItem: "Reach out for directory verification."
+        },
+        {
+            title: "Schema Speakable Integration",
+            description: "Your site lacks 'Speakable' schema. Voice assistants currently struggle to read your menu.",
+            impact: ImpactLevel.HIGH,
+            actionItem: "Inject JSON-LD speakable blocks."
+        },
+        {
+            title: "Visual Anchor Optimization",
+            description: "AI Vision is confusing your storefront with the adjacent building. Update primary GMB photo.",
+            impact: ImpactLevel.MEDIUM,
+            actionItem: "Upload panoramic storefront shot."
         }
     ],
     vocalSearch: {

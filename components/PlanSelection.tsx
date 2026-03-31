@@ -1,0 +1,160 @@
+import React from 'react';
+import { CheckIcon, SparklesIcon } from './Icons';
+import { supabase } from '../services/supabase';
+
+interface PlanSelectionProps {
+    userId: string;
+    onSuccess: () => void;
+    onClose?: () => void;
+}
+
+const PlanSelection: React.FC<PlanSelectionProps> = ({ userId, onSuccess, onClose }) => {
+    // We will inject the actual Lemon Squeezy URLs here
+    const plans = [
+        {
+            name: 'Business',
+            price: '39',
+            description: 'For solo entrepreneurs and local shops.',
+            features: ['12 Active Projects', '20 Prompt Simulations', '20 Vocal Simulations', 'Email Support'],
+            color: 'zinc',
+            checkoutUrl: import.meta.env.VITE_LEMON_BUSINESS_URL || '',
+        },
+        {
+            name: 'Specialists',
+            price: '99',
+            description: 'For scaling agencies and power users.',
+            features: ['50 Active Projects', 'Unlimited Prompts', 'Unlimited Vocal', 'Priority Support'],
+            color: 'emerald',
+            popular: true,
+            checkoutUrl: import.meta.env.VITE_LEMON_SPECIALIST_URL || '',
+        },
+        {
+            name: 'Agency',
+            price: '199',
+            description: 'For national brands and franchises.',
+            features: ['120 Active Projects', 'White-Label Reports', 'API Access', 'Dedicated Strategist'],
+            color: 'indigo',
+            checkoutUrl: import.meta.env.VITE_LEMON_AGENCY_URL || '',
+        }
+    ];
+
+    React.useEffect(() => {
+        // Initialize Lemon.js overlay seamlessly
+        const win = window as any;
+        if (win.createLemonSqueezy) {
+            win.createLemonSqueezy();
+            win.LemonSqueezy.Setup({
+                eventHandler: (event: any) => {
+                    console.log("Lemon Squeezy Payment Event:", event);
+                    if (event.event === 'Checkout.Success') {
+                        // Briefly delay to let your Supabase backend webhook save the upgrade
+                        setTimeout(() => {
+                            win.LemonSqueezy.Url.Close();
+                            onSuccess(); // Triggers Dash reload with new quotas
+                        }, 2500);
+                    }
+                }
+            });
+        }
+    }, [onSuccess]);
+
+    const selectPlan = async (plan: typeof plans[0]) => {
+        // If URLs are missing, fallback to development auto-upgrade for testing
+        if (!plan.checkoutUrl || plan.checkoutUrl === '') {
+            console.warn("No Lemon Squeezy URLs provided. Simulating upgrade for development.");
+            const { error } = await supabase
+                .from('profiles')
+                .update({ plan_name: plan.name, geo_score: 1 }) 
+                .eq('id', userId);
+            
+            if (!error) onSuccess();
+            return;
+        }
+
+        // Add custom user_id so edge function knows who to upgrade securely
+        const url = new URL(plan.checkoutUrl);
+        url.searchParams.set('checkout[custom][user_id]', userId);
+        
+        // Launch the beautiful inline overlay instead of a hard redirect
+        const win = window as any;
+        if (win.LemonSqueezy) {
+            win.LemonSqueezy.Url.Open(url.toString());
+        } else {
+            // Fallback if script failed to load for some reason
+            window.location.href = url.toString();
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-zinc-950/90 backdrop-blur-xl animate-fade-in overflow-y-auto">
+            {onClose && (
+                <button 
+                    onClick={onClose}
+                    className="fixed top-8 right-8 px-6 py-2 rounded-full bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all z-[80]"
+                >
+                    BACK TO DASHBOARD
+                </button>
+            )}
+            <div className="max-w-6xl w-full py-12">
+                <div className="text-center mb-12">
+                    <h2 className="text-4xl font-bold text-white mb-4 tracking-tight">Choose your AEO velocity</h2>
+                    <p className="text-zinc-400 max-w-2xl mx-auto">
+                        Your audit is ready and waiting. Select a plan to unlock the full forensic report and start your optimization journey.
+                    </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    {plans.map((plan) => (
+                        <div 
+                            key={plan.name}
+                            className={`relative bg-zinc-900/50 border ${plan.popular ? 'border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.1)]' : 'border-zinc-800'} rounded-3xl p-8 flex flex-col transition-all hover:scale-[1.02] hover:bg-zinc-900`}
+                        >
+                            {plan.popular && (
+                                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-emerald-500 text-black text-[10px] font-black uppercase tracking-widest px-4 py-1 rounded-full">
+                                    Most Popular
+                                </div>
+                            )}
+
+                            <div className="mb-8">
+                                <h3 className="text-xl font-bold text-white mb-2">{plan.name}</h3>
+                                <div className="flex items-baseline gap-1">
+                                    <span className="text-4xl font-bold text-white">${plan.price}</span>
+                                    <span className="text-zinc-500 text-sm">/mo</span>
+                                </div>
+                                <p className="text-zinc-400 text-xs mt-4 leading-relaxed">{plan.description}</p>
+                            </div>
+
+                            <div className="space-y-4 mb-8 flex-grow">
+                                {plan.features.map((feature) => (
+                                    <div key={feature} className="flex items-start gap-3">
+                                        <div className="mt-1 w-4 h-4 rounded-full bg-zinc-800 flex items-center justify-center">
+                                            <CheckIcon className="w-2.5 h-2.5 text-emerald-400" />
+                                        </div>
+                                        <span className="text-xs text-zinc-300">{feature}</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <button
+                                onClick={() => selectPlan(plan)}
+                                className={`w-full py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2
+                                    ${plan.popular 
+                                        ? 'bg-emerald-500 text-black hover:bg-emerald-400' 
+                                        : 'bg-zinc-800 text-white hover:bg-zinc-700'}`}
+                            >
+                                <SparklesIcon className="w-3 h-3" />
+                                Get Started
+                            </button>
+                        </div>
+                    ))}
+                </div>
+                
+                <div className="mt-12 text-center text-[10px] text-zinc-600 uppercase tracking-widest">
+                    Secure 256-bit payment processing by Lemon Squeezy
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default PlanSelection;

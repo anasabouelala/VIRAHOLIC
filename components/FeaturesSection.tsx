@@ -1,20 +1,25 @@
 import React from 'react';
-import { TargetIcon, ActivityIcon, SparklesIcon, GlobeIcon, FlameIcon, ZapIcon } from './Icons';
+import { TargetIcon, ActivityIcon, SparklesIcon, GlobeIcon, FlameIcon, ZapIcon, PenToolIcon } from './Icons';
 
 const features = [
     {
-        title: "Local Geo-Visibility Map",
+        title: "LLM Geo-Visibility Map (NEW)",
         desc: "See exactly how AI models rank you within your specific neighborhood. We map your 'Local Radius' to ensure you're the top recommendation for nearby customers.",
         icon: <GlobeIcon className="w-5 h-5 text-indigo-500" />
     },
     {
-        title: "Local Competitor Heist",
+        title: "Voice Assistant Simulator (NEW)",
+        desc: "Real-time simulation of Siri, Alexa, and Google Assistant. See exactly how your brand is vocalized and recommended in hands-free search.",
+        icon: <ZapIcon className="w-5 h-5 text-violet-500" />
+    },
+    {
+        title: "Local Competitor Keyword Heist",
         desc: "We analyze the coffee shop, law firm, or studio down the street. See the exact prompts they're winning and intercept their local foot traffic.",
         icon: <TargetIcon className="w-5 h-5 text-rose-500" />
     },
     {
-        title: "SME-Grade Hallucination Guard",
-        desc: "AI often gets local addresses, hours, or services wrong. We find these 'Trust Gaps' and help you fix them so customers actually find your front door.",
+        title: "SME Hallucination Guard",
+        desc: "AI often gets local addresses, hours, or services wrong. We find these 'Trust Gaps' and help you fix them before customers get lost.",
         icon: <ActivityIcon className="w-5 h-5 text-emerald-500" />
     },
     {
@@ -23,38 +28,51 @@ const features = [
         icon: <FlameIcon className="w-5 h-5 text-orange-500" />
     },
     {
-        title: "Local AEO Content Studio",
-        desc: "Generate neighborhood-specific content that feeds LLMs the local context they need to recommend you for 'Near Me' queries.",
-        icon: <ZapIcon className="w-5 h-5 text-amber-500" />
-    },
-    {
-        title: "Physical Trust Audit",
-        desc: "We use computer vision to analyze your storefront and interior photos. We ensure AI 'sees' a credible, high-quality physical business.",
-        icon: <SparklesIcon className="w-5 h-5 text-indigo-400" />
+        title: "AI Review Sentiment Injector",
+        desc: "Craft AI-optimized review responses that strategically inject missing keywords into the local training sets of major LLMs.",
+        icon: <PenToolIcon className="w-5 h-5 text-indigo-400" />
     }
 ];
 
 const FeaturesSection: React.FC = () => {
     return (
-        <section className="py-20 animate-fade-in">
-            <div className="text-center mb-16">
-                <h2 className="text-3xl font-display font-bold text-primary mb-4">The #1 AEO Engine for Local Business.</h2>
-                <p className="text-secondary text-sm max-w-lg mx-auto font-medium">Built specifically to help SMEs dominate neighborhood searches and drive real-world foot traffic through AI.</p>
+        <section className="py-12 animate-fade-in relative">
+            {/* Ambient Background Glows */}
+            <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px] -z-10"></div>
+            <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-[100px] -z-10"></div>
+
+            <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-black text-white tracking-[0.2em] uppercase opacity-90 drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+                    Features
+                </h2>
+                <div className="w-24 h-1 bg-gradient-to-r from-indigo-600 to-emerald-500 mx-auto mt-6 rounded-full blur-[1px]"></div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {features.map((f, i) => (
-                    <div key={i} className="group bg-white border border-border p-6 rounded-[32px] hover:border-indigo-200 transition-all hover:shadow-xl hover:-translate-y-1">
-                        <div className="w-12 h-12 rounded-2xl bg-background flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                    <div key={i} className="group relative bg-white/[0.02] border border-white/[0.05] p-10 rounded-[40px] hover:bg-white/[0.04] transition-all duration-500 hover:border-white/10 hover:-translate-y-2 overflow-hidden shadow-2xl">
+                        {/* Interactive Corner Glow */}
+                        <div className="absolute -top-12 -right-12 w-24 h-24 bg-indigo-500/20 rounded-full blur-[40px] opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+                        
+                        <div className="w-14 h-14 rounded-2xl bg-black border border-white/5 flex items-center justify-center mb-8 shadow-inner group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(255,255,255,0.05)] transition-all duration-500">
                             {f.icon}
                         </div>
-                        <h3 className="text-sm font-bold text-primary mb-3">{f.title}</h3>
-                        <p className="text-[11px] text-secondary leading-relaxed font-medium">
+                        <h3 className="text-lg font-bold text-white mb-4 tracking-tight">{f.title}</h3>
+                        <p className="text-sm text-zinc-500 leading-relaxed font-medium group-hover:text-zinc-400 transition-colors">
                             {f.desc}
                         </p>
+
+                        {/* Hover Decorative Line */}
+                        <div className="absolute bottom-0 left-0 w-0 h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent group-hover:w-full transition-all duration-700 opacity-60"></div>
                     </div>
                 ))}
             </div>
+
+            <style jsx>{`
+                .bg-gradient-radial {
+                    background: radial-gradient(circle at center, var(--tw-gradient-from) 0%, var(--tw-gradient-to) 100%);
+                }
+            `}</style>
         </section>
     );
 };

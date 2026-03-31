@@ -568,39 +568,40 @@ export const analyzeBusinessVisibility = async (business: BusinessInfo, geminiKe
       - No visual content (visualAudit score: 0) = MODERATE
       - Competitors outranking on citations = LOW
     
-    STEP 2 — GENERATE EXACTLY 5 MISSIONS, one per category below. Each mission MUST:
+    STEP 2 — GENERATE UP TO 10 MISSIONS based on the priority triage. Each mission MUST:
       a) Reference the EXACT verified data point that makes it necessary (e.g. "Identity Agent found: hasGbp = false", "Citation Agent found: Yelp isListed = false", "Sentiment: negativeTheme 'slow service' found in 8% of reviews").
       b) Have a hyper-specific title (NOT generic — e.g., NOT "Improve your GBP" but instead "Claim & Verify Your Google Business Profile on Google.com/business").
       c) Have a step-by-step description that someone can actually execute (e.g., "Go to google.com/business, search for your business name '${business.name}', click 'Claim This Business'...").
       d) Cite the 'Why' — i.e. connecting it to a specific LLM (e.g., "Why: Gemini sources GBP data directly to power local recommendations. Without it, you are invisible to all Google AI features.").
     
-    THE 5 CATEGORIES (pick the highest-priority issue within each):
+    THE 5 CATEGORIES (generate up to 2 distinct tasks per category for the highest-priority issues):
     
-    MISSION 1 — PRESENCE (GBP / Website):
+    PRESENCE (GBP / Website):
       - If hasGbp = false → Mission is about creating/claiming GBP. 
       - If hasGbp = true but websiteUrl = None → Mission is about building a landing page.
       - If both exist → Mission is about optimizing GBP with categories, attributes, or Q&A.
+      - Add a second task for optimizing website speed or accessibility if applicable.
     
-    MISSION 2 — CITATIONS (from the Verified Citation Ecosystem):
-      - Find the highest-priority directory where isListed = false.
-      - Mission is specifically about getting listed on THAT directory, with that exact URL.
-      - Explain which LLM feeds from that specific source.
+    CITATIONS (from the Verified Citation Ecosystem):
+      - Find the highest-priority directories where isListed = false.
+      - Create specific missions for getting listed on those exact URLs.
+      - Explain which LLM feeds from those specific sources.
     
-    MISSION 3 — REPUTATION (from Verified Sentiment):
+    REPUTATION (from Verified Sentiment):
       - If hasReviews = false → Mission is to generate first reviews (provide specific script/ask template).
       - If hasReviews = true AND rating < 4.0 → Mission is a response strategy for the specific negativeThemes found.
       - If rating >= 4.0 but volume is low → Mission is to increase review volume with a specific platform and tactic.
     
-    MISSION 4 — CONTENT / KEYWORDS (from Keyword Heist):
-      - Pick the keyword with the highest opportunityScore where owner = "Competitor".
-      - Mission is to create content specifically targeting THAT keyword, on the most appropriate platform (based on intent type).
+    CONTENT / KEYWORDS (from Keyword Heist):
+      - Pick up to 2 keywords with high opportunityScores where owner = "Competitor".
+      - Missions are to create content specifically targeting THOSE keywords on the most appropriate platforms.
     
-    MISSION 5 — AEO TECH (Schema / LLM Feed):
-      - Based on the biggest LLM gap (from llmPerformance scores), provide a technical action.
+    AEO TECH (Schema / LLM Feed):
+      - Based on the biggest LLM gaps (from llmPerformance scores), provide technical actions.
       - If Perplexity score < 20 → Mission is to add FAQPage schema markup.
       - If ChatGPT score < 20 → Mission is to submit a business description to Wikipedia or Wikidata.
       - If Gemini score < 20 → Mission is to add LocalBusiness schema.org markup.
-      - Provide the exact schema code snippet in the description if applicable.
+      - Provide the exact schema code snippets in the descriptions.
     
     FORBIDDEN: Do NOT generate a mission that says things like "improve your online presence" or "engage with customers" without a specific data-backed action. Every word must be traceable to the verified data payload.
 
@@ -650,7 +651,7 @@ export const analyzeBusinessVisibility = async (business: BusinessInfo, geminiKe
 
   try {
     const response = await ai.models.generateContent({
-      model: "models/gemini-2.5-pro",
+      model: "models/gemini-2.5-flash",
       contents: { parts: parts },
       config: {
         // NOTE: search tool is EXPLICITLY DISABLED for the compiler

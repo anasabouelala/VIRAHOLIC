@@ -232,3 +232,35 @@ export const XCircleIcon = ({ className }: { className?: string }) => (
     <line x1="9" y1="9" x2="15" y2="15"></line>
   </svg>
 );
+
+export const CheckIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <polyline points="20 6 9 17 4 12"></polyline>
+  </svg>
+);
+
+
+export const LogOutIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+    <polyline points="16 17 21 12 16 7"></polyline>
+    <line x1="21" y1="12" x2="9" y2="12"></line>
+  </svg>
+);
+
+export const TrashIcon = ({ className }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <polyline points="3 6 5 6 21 6"></polyline>
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+  </svg>
+);
+
+export const GoogleIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className={className} fill="currentColor">
+    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+    <path d="M12 23c3.08 0 5.68-1.02 7.57-2.77l-3.57-2.77c-1.01.68-2.31 1.09-4 1.09-3.04 0-5.61-2.05-6.53-4.81H1.75v3.13C3.67 20.61 7.58 23 12 23z" fill="#34A853"/>
+    <path d="M5.47 13.74c-.24-.72-.37-1.49-.37-2.3s.13-1.58.37-2.3V6.01H1.75C.64 8.22 0 10.04 0 11.44s.64 3.22 1.75 5.43l3.72-3.13z" fill="#FBBC05"/>
+    <path d="M12 5.07c1.68 0 3.19.58 4.38 1.72l3.28-3.28C17.68 1.58 15.08.56 12 .56 7.58.56 3.67 2.95 1.75 6.83l3.72 3.13c.92-2.76 3.49-4.89 6.53-4.89z" fill="#EA4335"/>
+  </svg>
+);
+
