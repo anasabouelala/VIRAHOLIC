@@ -11,18 +11,21 @@ interface State {
   errorInfo: ErrorInfo | null;
 }
 
-class ErrorBoundary extends Component<Props, State> {
-  public state: State = {
-    hasError: false,
-    error: null,
-    errorInfo: null,
-  };
+class ErrorBoundary extends React.Component<Props, State> {
+  constructor(props: Props) {
+    super(props);
+    this.state = {
+      hasError: false,
+      error: null,
+      errorInfo: null,
+    };
+  }
 
-  public static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error, errorInfo: null };
   }
 
-  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error("===== AEOHOLIC CRASH REPORT =====");
     console.error("Error:", error.message);
     console.error("Stack:", error.stack);
@@ -30,8 +33,9 @@ class ErrorBoundary extends Component<Props, State> {
     this.setState({ errorInfo });
   }
 
-  public render() {
+  render() {
     if (this.state.hasError) {
+      // ... same render logic
       return (
         <div style={{ 
           minHeight: '100vh', 
