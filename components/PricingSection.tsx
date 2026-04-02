@@ -3,45 +3,42 @@ import { CheckCircleIcon, TargetIcon, TrendingUpIcon, ActivityIcon, GlobeIcon } 
 
 const plans = [
     {
-        name: "Specialists",
-        price: "99",
-        desc: "The elite suite for AEO consultants and digital marketing specialists.",
-        features: [
-            "50 Active Projects (50 Full Audits)",
-            "Unlimited Prompt Simulations",
-            "Unlimited Vocal Simulations",
-            "White-Label Reporting (Beta)",
-            "Premium AEO Support"
-        ],
-        button: "Start Now",
-        highlight: false,
-        icon: <TargetIcon className="w-5 h-5 text-zinc-400" />
-    },
-    {
         name: "Business",
         price: "39",
-        desc: "Designed for business owners and freelancers",
+        desc: "Designed for business owners and freelancers to dominate local AI search.",
         features: [
             "12 Active Projects (12 Full Audits)",
             "20 Prompt Simulations",
             "20 Vocal Simulations",
-            "Cross-LLM GEO Intent Map",
-            "Full AEO Diagnostic Suite"
+            "Full diagnostic suite"
         ],
         button: "Start Now",
         highlight: true,
         icon: <TrendingUpIcon className="w-5 h-5 text-emerald-400" />
     },
     {
+        name: "Specialists",
+        price: "99",
+        desc: "Elite choice for consultants and marketers.",
+        features: [
+            "50 Active Projects",
+            "Unlimited Simulations",
+            "Unlimited Vocal",
+            "Premium Support"
+        ],
+        button: "Start Now",
+        highlight: false,
+        icon: <TargetIcon className="w-5 h-5 text-zinc-400" />
+    },
+    {
         name: "Agency",
         price: "199",
-        desc: "The ultimate enterprise solution for large-scale digital agencies.",
+        desc: "Scaling solution for companies.",
         features: [
-            "120 Active Projects (120 Full Audits)",
-            "Unlimited Prompt Simulations",
-            "Unlimited Vocal Simulations",
-            "Priority white-label API access",
-            "Dedicated Strategic Support"
+            "120 Active Projects",
+            "Unlimited Simulations",
+            "Unlimited Vocal",
+            "Strategy Manager"
         ],
         button: "Start Now",
         highlight: false,
@@ -60,9 +57,9 @@ const PricingSection: React.FC<PricingSectionProps> = ({ onSelectPlan }) => {
             
             <div className="text-center mb-12 relative z-10 px-4">
                 <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500 mb-4 block">Pricing Tiers</span>
-                <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight uppercase">INVEST IN YOUR VISIBILITY</h2>
+                <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight uppercase leading-tight">INVEST IN YOUR VISIBILITY</h2>
                 <div className="w-16 h-1 bg-emerald-500 mx-auto rounded-full mt-4 blur-[1px]"></div>
-                <p className="text-zinc-500 text-sm max-w-lg mx-auto font-medium mt-6 leading-relaxed opacity-80 uppercase tracking-tight">
+                <p className="text-zinc-500 text-sm max-w-xl mx-auto font-medium mt-6 leading-relaxed opacity-80 uppercase tracking-tight">
                     Master the Answer Engine era and <span className="text-emerald-400 font-bold underline underline-offset-4 decoration-emerald-500/20">dominate your local market.</span>
                 </p>
             </div>

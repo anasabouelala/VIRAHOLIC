@@ -14,25 +14,40 @@ const PlanSelection: React.FC<PlanSelectionProps> = ({ userId, onSuccess, onClos
         {
             name: 'Business',
             price: '39',
-            description: 'For solo entrepreneurs and local shops.',
-            features: ['12 Active Projects', '20 Prompt Simulations', '20 Vocal Simulations', 'Email Support'],
+            description: 'Designed for business owners.',
+            features: [
+                '12 Active Projects (12 Full Audits)',
+                '20 Prompt Simulations',
+                '20 Vocal Simulations',
+                'Full diagnostic suite'
+            ],
             color: 'zinc',
+            popular: true,
             checkoutUrl: import.meta.env.VITE_LEMON_BUSINESS_URL || '',
         },
         {
             name: 'Specialists',
             price: '99',
-            description: 'For scaling agencies and power users.',
-            features: ['50 Active Projects', 'Unlimited Prompts', 'Unlimited Vocal', 'Priority Support'],
+            description: 'Elite choice for consultants and marketers.',
+            features: [
+                '50 Active Projects',
+                'Unlimited Simulations',
+                'Unlimited Vocal',
+                'Premium Support'
+            ],
             color: 'emerald',
-            popular: true,
             checkoutUrl: import.meta.env.VITE_LEMON_SPECIALIST_URL || '',
         },
         {
             name: 'Agency',
             price: '199',
-            description: 'For national brands and franchises.',
-            features: ['120 Active Projects', 'White-Label Reports', 'API Access', 'Dedicated Strategist'],
+            description: 'Ultimate scaling for companies.',
+            features: [
+                '120 Active Projects',
+                'Unlimited Simulations',
+                'Unlimited Vocal',
+                'Strategy Manager'
+            ],
             color: 'indigo',
             checkoutUrl: import.meta.env.VITE_LEMON_AGENCY_URL || '',
         }

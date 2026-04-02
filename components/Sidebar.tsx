@@ -1,14 +1,14 @@
 import React from 'react';
 import { 
     SparklesIcon, 
+    MessageSquareIcon as SupportIcon, 
     PlusIcon, 
-    GearIcon, 
-    LogOutIcon, 
-    TargetIcon, 
-    GlobeIcon, 
-    MapPinIcon,
-    PenToolIcon,
-    TrashIcon
+    LogOutIcon,
+    TrashIcon,
+    CheckCircleIcon,
+    AlertCircleIcon,
+    XIcon,
+    PenToolIcon
 } from './Icons';
 
 interface SidebarProps {
@@ -211,15 +211,15 @@ const Sidebar: React.FC<SidebarProps> = ({
 
             {/* Footer */}
             <div className="p-4 border-t border-zinc-900/50 space-y-2">
-                <button 
-                    onClick={onSettings}
+                <a 
+                    href={`mailto:contact@aeoholic.com?subject=AEOHOLIC Support Request - ${projectName}&body=Hello AEOHOLIC Team,%0D%0A%0D%0Amy user ID is ${userEmail}.%0D%0A%0D%0AI need assistance with project: ${projectName}.%0D%0A%0D%0A%0D%0A[Describe your request here]`}
                     className="w-full flex items-center justify-between px-4 py-3 rounded-xl text-zinc-500 hover:text-white hover:bg-zinc-900 transition-all group"
                 >
                     <div className="flex items-center gap-3">
-                        <GearIcon className="w-4 h-4 group-hover:rotate-45 transition-transform" />
-                        <span className="text-[11px] font-bold">Settings</span>
+                        <SupportIcon className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                        <span className="text-[11px] font-bold">Contact Support</span>
                     </div>
-                </button>
+                </a>
                 <button 
                     onClick={onUpgrade}
                     className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all group"

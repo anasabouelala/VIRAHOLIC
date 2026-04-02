@@ -36,7 +36,7 @@ const fetchLLMInsight = async (ai: GoogleGenAI, business: BusinessInfo): Promise
     const response = await ai.models.generateContent({
       model: "models/gemini-2.5-flash",
       contents: { parts: [{ text: prompt }] },
-      config: { temperature: 0.7 }
+      config: { tools: [{ googleSearch: {} }], temperature: 0.2 }
     });
     return response.text || "No response from Gemini LLM.";
   } catch (e) {
@@ -425,6 +425,210 @@ const runHallucinationWall = async (ai: GoogleGenAI, draftReport: AnalysisResult
 };
 
 // ==========================================
+// AGENT: CHATGPT VISIBILITY AGENT
+// Simulates what ChatGPT actually finds via Bing-indexed sources
+// Runs 7 real web searches the way ChatGPT browses the internet
+// ==========================================
+const runChatGPTVisibilityAgent = async (ai: GoogleGenAI, business: BusinessInfo, identityData: any): Promise<any> => {
+  const { name, location, category } = business;
+  const prompt = `
+You are simulating how ChatGPT (GPT-4o with browsing) would respond to queries about a local business.
+ChatGPT uses the Bing search index — it does NOT use Google. It sources from: Bing Places, business websites, 
+Yelp, TripAdvisor (for hospitality only), industry-specific directories, social media indexed by Bing, 
+local media articles, and Reddit.
+
+Business: "${name}" | Location: "${location}" | Category: "${category}"
+
+YOUR TASK: Use Google Search to simulate Bing search behavior.
+Run searches for these 7 real user query types a customer would ask ChatGPT:
+1. DISCOVERY: "[business category] in [location]" — generic category search
+2. LOCAL: "best [category] near [location]" — local recommendation
+3. NAVIGATIONAL: "[business name] [location]" — brand-name search
+4. COMPARISON: "[category] vs alternatives in [location]" — comparing options
+5. TRANSACTIONAL: "book [category] [location]" or "prices [business name]" — intent to act
+6. DEEP RESEARCH: "reviews for [business name] [location]" — research mode
+7. VOICE/NATURAL: "who is the best [category] around [location]" — conversational
+
+For EACH query, use Google Search to check if the business appears in the top results.
+Consider: websites, directories, social profiles, review platforms relevant to this SPECIFIC CATEGORY.
+For a plumber: check Angi, HomeAdvisor, Thumbtack, BBB — NOT TripAdvisor.
+For a restaurant: check Yelp, TripAdvisor, Zomato, OpenTable — NOT Houzz.
+For a lawyer: check Avvo, FindLaw, Justia, LinkedIn — NOT Yelp.
+For a barbershop: check Yelp, StyleSeat, Booksy, Google Maps — NOT TripAdvisor.
+For a b2b service: check LinkedIn, G2, Clutch, company website — NOT Yelp.
+
+Return ONLY raw JSON (no markdown):
+{
+  "model": "ChatGPT",
+  "score": 0-100,
+  "status": "Top Choice" | "Option" | "Hidden",
+  "promptsTested": 7,
+  "promptsAppeared": 0-7,
+  "details": "One sentence describing ChatGPT visibility for this specific business",
+  "behaviorInsight": "2-3 sentences explaining WHY ChatGPT finds or doesn't find this business, referencing Bing, specific directories, and category-specific signals actually found via search",
+  "testedPrompts": [
+    { "text": "exact query tested", "intent": "Discovery|Local|Navigational|Comparison|Transactional|Deep Research|Voice", "appears": true|false, "competitorsShown": ["name1"] }
+  ],
+  "competitorReplacements": [
+    { "name": "competitor name", "appearancePercentage": 40-80, "examplePrompts": ["query where they appear"] }
+  ],
+  "topPromptsAppeared": ["query1", "query2"],
+  "topPromptsMissed": ["query1", "query2"]
+}
+  `;
+  try {
+    const response = await ai.models.generateContent({
+      model: "models/gemini-2.5-flash",
+      contents: { parts: [{ text: prompt }] },
+      config: { tools: [{ googleSearch: {} }], temperature: 0.2 }
+    });
+    const raw = (response.text || "{}").replace(/```json/g, "").replace(/```/g, "").trim();
+    const parsed = JSON.parse(raw);
+    return parsed;
+  } catch (e) {
+    console.error("[ChatGPT Visibility Agent] Error:", e);
+    return { model: "ChatGPT", score: 10, status: "Hidden", promptsTested: 7, promptsAppeared: 1, details: "Could not determine ChatGPT visibility.", behaviorInsight: "Search agent encountered an error.", testedPrompts: [], competitorReplacements: [], topPromptsAppeared: [], topPromptsMissed: [] };
+  }
+};
+
+// ==========================================
+// AGENT: PERPLEXITY VISIBILITY AGENT
+// Simulates what Perplexity actually surfaces via multi-engine + citations
+// Perplexity is citation-first: it cites sources, loves authoritative lists, Reddit
+// ==========================================
+const runPerplexityVisibilityAgent = async (ai: GoogleGenAI, business: BusinessInfo, identityData: any): Promise<any> => {
+  const { name, location, category } = business;
+  const prompt = `
+You are simulating how Perplexity AI would respond to queries about a local business.
+Perplexity aggregates Bing, Google, DuckDuckGo, Reddit, YouTube, Wikipedia, and niche directories.
+It CITES sources in its answers. A business appears in Perplexity if it appears in ANY of these sources.
+Perplexity especially values: "best of" editorial lists, Reddit discussions, authoritative directories, 
+news mentions, and consistent data across multiple sources (NAP = Name, Address, Phone).
+
+Business: "${name}" | Location: "${location}" | Category: "${category}"
+
+YOUR TASK: Use Google Search to simulate Perplexity's multi-source aggregation.
+Search for this business from multiple angles:
+1. Reddit mentions: site:reddit.com "${name}" OR "best ${category} ${location}" site:reddit.com
+2. Editorial/list mentions: "best ${category} in ${location}" including any list that mentions "${name}"
+3. Category-native platforms: Search the RELEVANT platform for this category. 
+   - Restaurants → TripAdvisor, Yelp, food blogs
+   - Home services → Angi, HomeAdvisor, Reddit r/homeimprovement
+   - Lawyers → Avvo, FindLaw, legal blogs
+   - Barbershop → Yelp, StyleSeat, Booksy, "best barbershop [city]" articles
+   - B2B → G2, Clutch, LinkedIn, tech publications
+4. News/press: "${name}" site:news.*.local OR any news publication
+5. Direct search: "${name}" "${location}" — does it appear with citations at all?
+6. Comparison search: "${category} recommendations ${location}" — are they listed?
+7. Natural language: "where can I find a good ${category} in ${location}" — Reddit/Quora answers
+
+For each query determine if this SPECIFIC business (not just the category) appears.
+Check if it's mentioned, cited, linked, listed, or recommended.
+
+Return ONLY raw JSON (no markdown):
+{
+  "model": "Perplexity",
+  "score": 0-100,
+  "status": "Top Choice" | "Option" | "Hidden",
+  "promptsTested": 7,
+  "promptsAppeared": 0-7,
+  "details": "One sentence describing Perplexity visibility for this specific business",
+  "behaviorInsight": "2-3 sentences explaining Perplexity's findings: which sources cited this business, whether it's on Reddit, in 'best of' lists, or in category-native directories. Reference actual sources found.",
+  "testedPrompts": [
+    { "text": "exact query tested", "intent": "Reddit|Editorial|Directory|News|Direct|Comparison|Natural", "appears": true|false, "competitorsShown": ["name1"] }
+  ],
+  "competitorReplacements": [
+    { "name": "competitor name seen in results instead", "appearancePercentage": 40-80, "examplePrompts": ["query"] }
+  ],
+  "topPromptsAppeared": ["query1", "query2"],
+  "topPromptsMissed": ["query1", "query2"]
+}
+  `;
+  try {
+    const response = await ai.models.generateContent({
+      model: "models/gemini-2.5-flash",
+      contents: { parts: [{ text: prompt }] },
+      config: { tools: [{ googleSearch: {} }], temperature: 0.2 }
+    });
+    const raw = (response.text || "{}").replace(/```json/g, "").replace(/```/g, "").trim();
+    const parsed = JSON.parse(raw);
+    return parsed;
+  } catch (e) {
+    console.error("[Perplexity Visibility Agent] Error:", e);
+    return { model: "Perplexity", score: 10, status: "Hidden", promptsTested: 7, promptsAppeared: 1, details: "Could not determine Perplexity visibility.", behaviorInsight: "Search agent encountered an error.", testedPrompts: [], competitorReplacements: [], topPromptsAppeared: [], topPromptsMissed: [] };
+  }
+};
+
+// ==========================================
+// AGENT: CLAUDE VISIBILITY AGENT
+// Simulates Claude's knowledge: training data signals, schema, authority, entity recognition
+// Claude 3.x has web search but defaults to training data — we evaluate both
+// ==========================================
+const runClaudeVisibilityAgent = async (ai: GoogleGenAI, business: BusinessInfo, identityData: any): Promise<any> => {
+  const { name, location, category } = business;
+  const prompt = `
+You are simulating how Claude (Anthropic) would respond to queries about a local business.
+Claude 3.x uses a combination of training data (knowledge cutoff) AND can use web search on claude.ai.
+Claude prioritizes: factual, structured, verifiable content. It avoids unverifiable claims.
+Claude relies on: websites with clear structured data (schema.org), Wikipedia, authoritative press mentions,
+high-quality content, well-known brands, and verifiable entity data.
+Claude is skeptical of unknown local SMEs without training data signals.
+For local business queries without web search, Claude often says "I don't have specific information."
+
+Business: "${name}" | Location: "${location}" | Category: "${category}"
+
+YOUR TASK: Use Google Search to assess Claude's likely training data coverage of this business.
+Search for:
+1. ENTITY STRENGTH: Is this a known entity? Search "${name}" Wikipedia OR "${name}" Wikidata OR "${name}" Crunchbase
+2. STRUCTURED DATA: Does the website have schema markup? Search "${name}" site:${identityData.websiteUrl || location} OR look for structured data indicators
+3. AUTHORITY SIGNALS: Is the business mentioned in authoritative press? "${name}" site:*.com/news OR major publications
+4. BRAND RECOGNITION: Is this a regional/national chain or truly local? Search "${name}" brand OR franchise OR chain
+5. CATEGORY KNOWLEDGE: Does Claude's category have strong training data? Evaluate based on how common/documented ${category} businesses are in AI training corpora
+6. FACTUAL VERIFIABILITY: Can Claude verify the core facts? Search for the business address, phone, services — are they consistently listed?
+7. CONVERSATIONAL QUERY: "Who is ${name} in ${location}?" — would any authoritative source answer this?
+
+Important distinctions:
+- A Coca-Cola or McDonald's = very high Claude score (globally known brand, massive training data)
+- A famous local institution (e.g., "L'Ambroisie" Paris) = medium-high Claude score 
+- A typical neighborhood barbershop with no press = low Claude score (below training data threshold)
+- A Pilates studio posted on Instagram only = very low Claude score
+- A tech startup with Crunchbase profile + press = medium Claude score
+
+Return ONLY raw JSON (no markdown):
+{
+  "model": "Claude",
+  "score": 0-100,
+  "status": "Top Choice" | "Option" | "Hidden",
+  "promptsTested": 7,
+  "promptsAppeared": 0-7,
+  "details": "One sentence about Claude's coverage of this specific business",
+  "behaviorInsight": "2-3 sentences: Does Claude know this business from training data? What authority signals exist? Would Claude confidently recommend it or say 'I don't have information about this specific business'?",
+  "testedPrompts": [
+    { "text": "exact query tested", "intent": "Entity|Schema|Authority|Brand|Category|Factual|Conversational", "appears": true|false, "competitorsShown": ["well-known competitor name"] }
+  ],
+  "competitorReplacements": [
+    { "name": "well-known competitor Claude would name instead", "appearancePercentage": 50-90, "examplePrompts": ["query"] }
+  ],
+  "topPromptsAppeared": ["query1"],
+  "topPromptsMissed": ["query1", "query2", "query3"]
+}
+  `;
+  try {
+    const response = await ai.models.generateContent({
+      model: "models/gemini-2.5-flash",
+      contents: { parts: [{ text: prompt }] },
+      config: { tools: [{ googleSearch: {} }], temperature: 0.2 }
+    });
+    const raw = (response.text || "{}").replace(/```json/g, "").replace(/```/g, "").trim();
+    const parsed = JSON.parse(raw);
+    return parsed;
+  } catch (e) {
+    console.error("[Claude Visibility Agent] Error:", e);
+    return { model: "Claude", score: 5, status: "Hidden", promptsTested: 7, promptsAppeared: 0, details: "Could not determine Claude visibility.", behaviorInsight: "Search agent encountered an error.", testedPrompts: [], competitorReplacements: [], topPromptsAppeared: [], topPromptsMissed: [] };
+  }
+};
+
+// ==========================================
 // AGENT 4: COMPILER (SEARCH DISABLED)
 // ==========================================
 export const analyzeBusinessVisibility = async (business: BusinessInfo, geminiKey?: string): Promise<AnalysisResult> => {
@@ -451,13 +655,16 @@ export const analyzeBusinessVisibility = async (business: BusinessInfo, geminiKe
     sentimentPromise
   ]);
 
-  // 3b. Run Visual + Vocal agents in parallel (after sentiment is available)
-  console.log("[Pipeline] Running Visual and Vocal agents...");
-  const [visualData, vocalData] = await Promise.all([
+  // 3b. Run Visual, Vocal, AND the 3 LLM Visibility Agents in parallel
+  console.log("[Pipeline] Running Visual, Vocal, and LLM Visibility agents...");
+  const [visualData, vocalData, chatGPTData, perplexityData, claudeData] = await Promise.all([
     runVisualAgent(ai, business, identityData),
-    runVocalSearchAgent(ai, business, identityData, sentimentData)
+    runVocalSearchAgent(ai, business, identityData, sentimentData),
+    runChatGPTVisibilityAgent(ai, business, identityData),
+    runPerplexityVisibilityAgent(ai, business, identityData),
+    runClaudeVisibilityAgent(ai, business, identityData)
   ]);
-  console.log("[Pipeline] Visual and Vocal agents complete.");
+  console.log("[Pipeline] Visual, Vocal, and LLM Visibility agents complete.");
 
   // 4. Compile Master Prompt
   const promptText = `
@@ -478,6 +685,21 @@ export const analyzeBusinessVisibility = async (business: BusinessInfo, geminiKe
 
     [LIVE GEMINI LLM RESPONSE — What Gemini actually says when a customer asks about this business]
     "${realLLMData}"
+
+    [CHATGPT VISIBILITY AGENT — Real web search simulating ChatGPT/Bing behavior]
+    IMPORTANT: Use this data DIRECTLY for the ChatGPT entry in llmPerformance. Do NOT recalculate.
+    Score: ${chatGPTData.score}/100 | Status: ${chatGPTData.status} | Appeared: ${chatGPTData.promptsAppeared}/7
+    ${JSON.stringify(chatGPTData)}
+
+    [PERPLEXITY VISIBILITY AGENT — Real web search simulating Perplexity multi-source behavior]
+    IMPORTANT: Use this data DIRECTLY for the Perplexity entry in llmPerformance. Do NOT recalculate.
+    Score: ${perplexityData.score}/100 | Status: ${perplexityData.status} | Appeared: ${perplexityData.promptsAppeared}/7
+    ${JSON.stringify(perplexityData)}
+
+    [CLAUDE VISIBILITY AGENT — Real web search simulating Claude training data coverage]
+    IMPORTANT: Use this data DIRECTLY for the Claude entry in llmPerformance. Do NOT recalculate.
+    Score: ${claudeData.score}/100 | Status: ${claudeData.status} | Appeared: ${claudeData.promptsAppeared}/7
+    ${JSON.stringify(claudeData)}
 
     [COMPETITOR AGENT FINDINGS — Top local rivals appearing on Google Maps]
     ${JSON.stringify(competitorData)}
@@ -528,16 +750,42 @@ export const analyzeBusinessVisibility = async (business: BusinessInfo, geminiKe
        - If hasReviews=true: (sentimentData.rating / 5) * 80 + (sentimentData.reviewCount > 100 ? 20 : sentimentData.reviewCount / 5) 
        - If hasReviews=false: Score is fixed at 15.
        
+       ** RELEVANCE (20% weight of Overall) **
+        - +40 if the business category ("${business.category}") exactly matches the industry keywords found in search results.
+        - +30 if the business website contains keyword-rich content relevant to the niche.
+        - +30 if the business Google Business Profile category is correctly set.
+        - Penalty: -20 if the business is listed in incorrect or irrelevant directories (e.g., a plumber on TripAdvisor).
+
        ** CITATIONS (25% weight of Overall) **
        - (Count of citations where isListed=true / Total targeted citations) * 100
        
        ** OVERALL SCORE **
-       - This MUST be the mathematical average of the 4 attributes above. Avoid "gut feeling" rounding.
+       - This MUST be the mathematical average of the 5 attributes above (Authority, Consistency, Sentiment, Relevance, Citations). Avoid "gut feeling" rounding.
 
     2. ATTRIBUTE EXPLANATIONS: For every attribute score, the 'explanation' field MUST start with the breakdown (e.g., "Score 75: +40 GBP, +30 Website, +20 Searchable, -15 missing Citations."). This makes the audit 100% verifiable by the user. Explain any point losses based ONLY on proven missing data.
     
-    3. LLM PERFORMANCE: Use the "LIVE GEMINI FEEDBACK" to directly dictate the Gemini model's status and score. If the feedback states the business is unknown or not in the top recommendations, Gemini's score MUST be < 15 and status MUST be "Hidden". For ChatGPT and Perplexity, if the business lacks directory citations (Yelp, Tripadvisor) or a GBP, they cannot rank locally. Score them < 15 ("Hidden"). Do NOT artificially inflate LLM scores if the overall GEO score is terrible.
-    
+    3. LLM PERFORMANCE — USE AGENT DATA DIRECTLY (Do NOT recalculate):
+    The 3 dedicated search agents above have already run real web searches for ChatGPT, Perplexity, and Claude.
+    Their results are pre-computed and grounded in actual search findings.
+
+    FOR CHATGPT: Copy the data from [CHATGPT VISIBILITY AGENT] directly into the llmPerformance array.
+    FOR PERPLEXITY: Copy the data from [PERPLEXITY VISIBILITY AGENT] directly into the llmPerformance array.
+    FOR CLAUDE: Copy the data from [CLAUDE VISIBILITY AGENT] directly into the llmPerformance array.
+    DO NOT change their scores, promptsAppeared, testedPrompts, or behaviorInsight — these are real findings.
+
+    FOR GEMINI ONLY: Calculate the score using this rubric based on the LIVE GEMINI FEEDBACK above:
+      - Start at base 0
+      - +35 if hasGbp=true AND address is complete | +20 if GBP exists but address partial | +0 (cap at 40) if no GBP
+      - +20 if websiteUrl exists and appears established | +10 if website is minimal
+      - +15 if hasReviews=true AND rating>=4.5 AND reviewCount>50 | +10 if rating>=4.0 AND reviewCount>20 | +5 if rating>=3.5 | +2 if low rating
+      - +5 per CATEGORY-RELEVANT citation where isListed=true (max 3 citations = 15pts). Only count platforms relevant to the business category.
+      - +5 if instagramUrl exists for visual categories (food/beauty/retail) | +2 for other categories
+      - +2 if facebookUrl exists
+      - +10 if LIVE GEMINI FEEDBACK explicitly names business as top recommendation
+      - +5 if mentioned neutrally | +0 if not mentioned | -5 if Gemini says business is unknown
+    Gemini status: score>=70 → "Top Choice" | 40-69 → "Option" | <40 → "Hidden"
+
+
     3. SENTIMENT AUDIT: Use the "Verified Reputation & Sentiment" payload. If "hasReviews" is true, analyze their rating (e.g., lower than 4.0 means trouble), review volume, and explicitly map the "negativeThemes" into the negativeEntities array to calculate a toxicityScore (0-100, where 0 is perfect/clean and higher means severe toxicity or frequent complaints). If "hasReviews" is false, set toxicityScore to 0, negativeEntities to an empty array [], and summary to "No verifiable review data available in this scan."
     
     4. KEYWORD HEIST: Deduce 4-6 logical broad keywords based on their Category. Classify each keyword's intent as "Navigational", "Commercial", or "Deep Research". For each keyword, estimate the monthly prompt volume for each major LLM using this methodology:

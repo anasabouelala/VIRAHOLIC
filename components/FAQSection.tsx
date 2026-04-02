@@ -3,6 +3,14 @@ import { PlusIcon, MinusIcon } from './Icons';
 
 const faqs = [
     {
+        question: "What is Answer Engine Optimization (AEO)?",
+        answer: "Answer Engine Optimization (AEO) is the practice of optimizing digital content to increase its visibility and citation frequency within AI-powered 'Answer Engines' like ChatGPT, Perplexity, Gemini, and Claude. It focuses on structured facts, entity relationships, and sentiment rather than just keywords and backlinks."
+    },
+    {
+        question: "How can I get my business cited by LLMs like ChatGPT?",
+        answer: "Getting cited requires becoming a trusted 'entity' in an LLM's knowledge graph. This is achieved through structured data (schema.org), maintaining consistent NAP (Name, Address, Phone) data across the web, and generating high-sentiment mentions in training data sources. AEOHOLIC diagnostics identify exactly which signals you are missing."
+    },
+    {
         question: "What exactly is AEOHOLIC about?",
         answer: "AEOHOLIC is the first specialized diagnostic suite for Answer Engine Optimization (AEO). It uses 12 specialized AI agents to analyze how LLMs like ChatGPT and Gemini perceive and recommend your business in real-time."
     },
@@ -40,7 +48,7 @@ const FAQSection: React.FC = () => {
     const [openIndex, setOpenIndex] = useState<number | null>(0);
 
     return (
-        <section className="py-16 border-t border-white/5 animate-fade-in relative overflow-hidden bg-black/20 rounded-[60px] my-6 mx-4 shadow-xl">
+        <section id="faq" aria-labelledby="faq-heading" className="py-16 border-t border-white/5 animate-fade-in relative overflow-hidden bg-black/20 rounded-[60px] my-6 mx-4 shadow-xl" itemScope itemType="https://schema.org/FAQPage">
             {/* Ambient Background Glows */}
             <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-500/5 rounded-full blur-[120px] -z-10 animate-pulse"></div>
             <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-[120px] -z-10"></div>
@@ -49,12 +57,18 @@ const FAQSection: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
                     
                     {/* Left Side: Founder's Story */}
+                    <div className="lg:col-span-12 lg:mb-12">
+                        <h2 id="faq-heading" className="text-3xl md:text-5xl font-bold text-white mb-6 tracking-tight uppercase leading-tight text-center">
+                            AEO & GEO <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-indigo-400">Knowledge Center</span>
+                        </h2>
+                    </div>
+
                     <div className="lg:col-span-5 space-y-8">
                         <div>
                             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-500 mb-4 block">The Mission</span>
-                            <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 tracking-tight uppercase leading-tight">
+                            <h3 className="text-2xl md:text-3xl font-bold text-white mb-6 tracking-tight uppercase leading-tight">
                                 Bridging the gap in <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-indigo-400">Local Visibility</span>
-                            </h2>
+                            </h3>
                         </div>
 
                         <div className="relative p-1 rounded-[40px] bg-gradient-to-br from-white/10 to-transparent">
@@ -105,19 +119,24 @@ const FAQSection: React.FC = () => {
                     </div>
 
                     {/* Right Side: FAQ Accordions */}
-                    <div className="lg:col-span-7 pt-4 lg:pt-14 overflow-hidden">
+                    <div className="lg:col-span-7 pt-4 overflow-hidden">
                         <div className="space-y-4">
                             {faqs.map((faq, i) => (
                                 <div 
                                     key={i} 
+                                    itemScope 
+                                    itemProp="mainEntity" 
+                                    itemType="https://schema.org/Question"
                                     className={`group border border-white/5 rounded-3xl transition-all duration-300 overflow-hidden
                                     ${openIndex === i ? 'bg-white/[0.03] border-white/10 shadow-lg' : 'hover:bg-white/[0.01]'}`}
                                 >
                                     <button 
                                         onClick={() => setOpenIndex(openIndex === i ? null : i)}
+                                        aria-expanded={openIndex === i}
+                                        aria-controls={`faq-answer-${i}`}
                                         className="w-full py-6 px-8 flex items-center justify-between text-left focus:outline-none"
                                     >
-                                        <span className={`text-sm font-bold tracking-tight transition-colors duration-300
+                                        <span itemProp="name" className={`text-sm font-bold tracking-tight transition-colors duration-300
                                         ${openIndex === i ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
                                             {faq.question}
                                         </span>
@@ -130,9 +149,15 @@ const FAQSection: React.FC = () => {
                                         </div>
                                     </button>
                                     
-                                    <div className={`overflow-hidden transition-all duration-500 ease-in-out
-                                    ${openIndex === i ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
-                                        <div className="px-8 pb-8 text-sm text-zinc-500 leading-relaxed font-medium max-w-2xl border-t border-white/5 mt-2 pt-4">
+                                    <div 
+                                        id={`faq-answer-${i}`}
+                                        itemScope 
+                                        itemProp="acceptedAnswer" 
+                                        itemType="https://schema.org/Answer"
+                                        className={`overflow-hidden transition-all duration-500 ease-in-out
+                                        ${openIndex === i ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}
+                                    >
+                                        <div itemProp="text" className="px-8 pb-8 text-sm text-zinc-500 leading-relaxed font-medium max-w-2xl border-t border-white/5 mt-2 pt-4">
                                             {faq.answer}
                                         </div>
                                     </div>

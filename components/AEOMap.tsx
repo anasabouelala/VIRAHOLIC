@@ -33,7 +33,7 @@ interface AEOMapProps {
   center: { lat: number; lng: number };
   businessName: string;
   category: string;
-  competitors?: { name: string; [key: string]: any }[];
+  competitors?: { name: string;[key: string]: any }[];
 }
 
 // --- Mock Data Generator ---
@@ -267,7 +267,7 @@ const generateMockPoints = (center: { lat: number; lng: number }, category: stri
   let activeCompetitors = realCompetitors && realCompetitors.length > 0
     ? realCompetitors.map(c => c.name || c.businessName || c.title).filter(Boolean)
     : defaultCompetitors;
-    
+
   if (activeCompetitors.length === 0) activeCompetitors = ["Local Market Expert"];
 
   for (let xi = -2; xi <= 3; xi++) {
@@ -346,15 +346,15 @@ const AEOMap: React.FC<AEOMapProps> = ({ center, businessName, category, competi
                 <div className="relative group/info flex items-center">
                   <InfoIcon className="w-3.5 h-3.5 text-zinc-500 cursor-help hover:text-white transition-colors" />
                   <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-[320px] bg-zinc-950 border border-zinc-700/80 p-4 rounded-xl shadow-2xl opacity-0 invisible group-hover/info:opacity-100 group-hover/info:visible transition-all z-[100] text-left pointer-events-none">
-                     <p className="text-[11px] font-bold text-white uppercase mb-2">How this is scored</p>
-                     <p className="text-[10px] text-zinc-400 leading-relaxed">
-                       This score represents your <strong>Share of Voice</strong> across major Answer Engines (ChatGPT, Perplexity, Claude, Gemini) for your physical coordinate.
-                     </p>
-                     <ul className="text-[10px] text-zinc-400 leading-relaxed mt-2 space-y-1 list-disc pl-3">
-                       <li><strong>Near Me:</strong> "Best {category} nearby"</li>
-                       <li><strong>Comparative:</strong> "Is {businessName} better than competitors?"</li>
-                       <li><strong>Long-Tail:</strong> Solution-based service prompts.</li>
-                     </ul>
+                    <p className="text-[11px] font-bold text-white uppercase mb-2">How this is scored</p>
+                    <p className="text-[10px] text-zinc-400 leading-relaxed">
+                      This score represents your <strong>Share of Voice</strong> across major Answer Engines (ChatGPT, Perplexity, Claude, Gemini) for your physical coordinate.
+                    </p>
+                    <ul className="text-[10px] text-zinc-400 leading-relaxed mt-2 space-y-1 list-disc pl-3">
+                      <li><strong>Near Me:</strong> "Best {category} nearby"</li>
+                      <li><strong>Comparative:</strong> "Is {businessName} better than competitors?"</li>
+                      <li><strong>Long-Tail:</strong> Solution-based service prompts.</li>
+                    </ul>
                   </div>
                 </div>
               </div>
@@ -416,12 +416,12 @@ const AEOMap: React.FC<AEOMapProps> = ({ center, businessName, category, competi
                     )}
                     {/* Circle Score Badge */}
                     <div className="relative flex items-center justify-center">
-                       <div className={`relative z-10 flex items-center justify-center transition-all duration-200 w-8 h-8 md:w-9 md:h-9 rounded-full text-white font-bold text-[11px] md:text-[13px] border shadow-md
+                      <div className={`relative z-10 flex items-center justify-center transition-all duration-200 w-8 h-8 md:w-9 md:h-9 rounded-full text-white font-bold text-[11px] md:text-[13px] border shadow-md
                           ${isSelected ? 'scale-125 z-[60] ring-2 ring-white/50 shadow-xl' : 'z-10 hover:scale-110'}
                           ${meta.bg} ${meta.border}
                        `}>
-                          {pt.ai_visibility_score}
-                       </div>
+                        {pt.ai_visibility_score}
+                      </div>
                     </div>
                   </div>
                 </OverlayAny>
@@ -465,10 +465,10 @@ const AEOMap: React.FC<AEOMapProps> = ({ center, businessName, category, competi
                     {hoveredPoint.ai_visibility_score}
                   </div>
                   <div>
-                     <h4 className="text-xs font-bold text-white uppercase">AEO Result</h4>
-                     <p className="text-[10px] text-zinc-500 font-mono">
-                       {hoveredPoint.distance_km === 0 ? 'Home Base' : `${hoveredPoint.distance_km}km from center`} • LAT: {hoveredPoint.lat.toFixed(4)}
-                     </p>
+                    <h4 className="text-xs font-bold text-white uppercase">AEO Result</h4>
+                    <p className="text-[10px] text-zinc-500 font-mono">
+                      {hoveredPoint.distance_km === 0 ? 'Home Base' : `${hoveredPoint.distance_km}km from center`} • LAT: {hoveredPoint.lat.toFixed(4)}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -526,8 +526,8 @@ const AEOMap: React.FC<AEOMapProps> = ({ center, businessName, category, competi
                   {selectedPoint.ai_visibility_score >= 71
                     ? 'AI engines actively recommend your business in this zone above local competitors.'
                     : selectedPoint.ai_visibility_score >= 31
-                    ? 'AI engines alternate between you and competitors. Visibility is inconsistent.'
-                    : 'AI engines rarely surface your business here. Competitor authority dominates.'}
+                      ? 'AI engines alternate between you and competitors. Visibility is inconsistent.'
+                      : 'AI engines rarely surface your business here. Competitor authority dominates.'}
                 </p>
               </div>
 
@@ -568,11 +568,11 @@ const AEOMap: React.FC<AEOMapProps> = ({ center, businessName, category, competi
                     </div>
                   </div>
 
-                    <div>
-                      <div className="flex items-center gap-1.5 mb-3">
-                        <TrendingUpIcon className="w-3 h-3 text-emerald-400" />
-                        <h4 className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Competitor Advantage Analysis</h4>
-                      </div>
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-3">
+                      <TrendingUpIcon className="w-3 h-3 text-emerald-400" />
+                      <h4 className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Competitor Advantage Analysis</h4>
+                    </div>
 
                     {selectedPoint.reasons_not_recommended.length === 0 ? (
                       <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-5 text-center">

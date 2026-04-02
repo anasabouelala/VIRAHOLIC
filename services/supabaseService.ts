@@ -2,23 +2,55 @@ import { supabase } from './supabase';
 import { AnalysisResult } from '../types';
 
 export const saveAudit = async (userId: string, businessName: string, geoScore: number, reportData: AnalysisResult, projectId?: string) => {
-    const { data, error } = await supabase
-        .from('audits')
-        .insert([
-            {
-                user_id: userId,
-                business_name: businessName,
-                geo_score: geoScore,
-                report_data: reportData,
-                project_id: projectId
+    try {
+        // 1. Check if an audit already exists for this project
+        // This is more reliable than 'upsert' with complex unique constraints
+        if (projectId) {
+            const { data: existing } = await supabase
+                .from('audits')
+                .select('id')
+                .eq('project_id', projectId)
+                .maybeSingle();
+
+            if (existing) {
+                // 2a. Perform update if it exists
+                const { data, error } = await supabase
+                    .from('audits')
+                    .update({
+                        business_name: businessName,
+                        geo_score: geoScore,
+                        report_data: reportData,
+                        user_id: userId
+                    })
+                    .eq('id', existing.id)
+                    .select();
+                
+                if (error) throw error;
+                return { success: true, data };
             }
-        ]);
-    
-    if (error) {
-        console.error('Error saving audit:', error);
+        }
+
+        // 2b. Perform insert if no project_id or no existing record
+        const { data, error } = await supabase
+            .from('audits')
+            .insert([
+                {
+                    user_id: userId,
+                    business_name: businessName,
+                    geo_score: geoScore,
+                    report_data: reportData,
+                    project_id: projectId
+                }
+            ])
+            .select();
+        
+        if (error) throw error;
+        return { success: true, data };
+
+    } catch (error) {
+        console.error('CRITICAL: Error in saveAudit:', error);
         return { success: false, error };
     }
-    return { success: true, data };
 };
 
 export const getUserAudits = async (userId: string) => {
@@ -68,7 +100,7 @@ export const getProjects = async (userId: string) => {
         console.error('Error fetching projects:', error);
         return [];
     }
-    return data;
+    return data || [];
 };
 
 export const updateProject = async (projectId: string, updates: { name?: string; brand_name?: string }) => {
@@ -87,26 +119,73 @@ export const updateProject = async (projectId: string, updates: { name?: string;
 };
 
 export const deleteProject = async (projectId: string) => {
-    // 1. Delete associated audits first to prevent foreign key constraint violation
-    const { error: auditError } = await supabase
-        .from('audits')
-        .delete()
-        .eq('project_id', projectId);
-        
-    if (auditError) {
-        console.error('Error deleting project audits:', auditError);
-        return { success: false, error: auditError };
-    }
-
-    // 2. Delete the project itself
-    const { error: projectError } = await supabase
+    // Relying on the database ON DELETE CASCADE for audits
+    const { error } = await supabase
         .from('projects')
         .delete()
         .eq('id', projectId);
-    
-    if (projectError) {
-        console.error('Error deleting project:', projectError);
-        return { success: false, error: projectError };
+        
+    if (error) {
+        console.error('Error deleting project:', error);
+        return { success: false, error };
     }
+
     return { success: true };
+};
+
+/**
+ * Gets the current usage from the user profile.
+ * This also triggers the monthly reset logic in Postgres.
+ */
+export const getUserUsage = async (userId: string) => {
+    // Calling the function we created in migration
+    const { data, error } = await supabase.rpc('get_current_usage', { target_user_id: userId });
+    
+    if (error) {
+        console.error('Error fetching usage:', error);
+        return { audits_used: 0, simulations_used: 0 };
+    }
+    
+    return data && data[0] ? data[0] : { audits_used: 0, simulations_used: 0 };
+};
+
+/**
+ * Increments the user's audit consumption count.
+ */
+export const incrementAuditUsage = async (userId: string) => {
+    const { error } = await supabase.rpc('increment_audits', { target_user_id: userId });
+    if (error) {
+        // Fallback: manual update if RPC fails
+        const { data: profile } = await supabase.from('profiles').select('audits_consumed').eq('id', userId).single();
+        await supabase.from('profiles').update({ audits_consumed: (profile?.audits_consumed || 0) + 1 }).eq('id', userId);
+    }
+};
+
+/**
+ * Increments the user's simulation consumption count.
+ */
+export const incrementSimulationUsage = async (userId: string) => {
+    // Create the RPC if it doesn't exist, or just use manual update
+    const { data: profile } = await supabase.from('profiles').select('simulations_consumed').eq('id', userId).single();
+    await supabase.from('profiles').update({ simulations_consumed: (profile?.simulations_consumed || 0) + 1 }).eq('id', userId);
+};
+
+export const getTotalAuditCount = async (userId: string) => {
+    const usage = await getUserUsage(userId);
+    return usage.audits_used;
+};
+
+// Support Tickets
+export const createSupportTicket = async (ticket: { user_id: string; user_email: string; subject: string; message: string }) => {
+    const { data, error } = await supabase
+        .from('support_tickets')
+        .insert([ticket])
+        .select()
+        .single();
+    
+    if (error) {
+        console.error('Error creating support ticket:', error);
+        return { success: false, error };
+    }
+    return { success: true, data };
 };

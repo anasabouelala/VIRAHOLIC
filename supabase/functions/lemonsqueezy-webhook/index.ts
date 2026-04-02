@@ -74,12 +74,15 @@ serve(async (req) => {
                 Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
             );
 
-            // Update user's profile with the new plan_name
+            // Update user's profile with the new plan_name and reset usage
             const { error } = await supabaseAdmin
                 .from('profiles')
                 .update({ 
                     plan_name: planName, 
-                    geo_score: 1 // Using geo_score > 0 as "has_plan" marker as per frontend logic
+                    geo_score: 1, // Using geo_score > 0 as "has_plan" marker as per frontend logic
+                    subscription_started_at: new Date().toISOString(),
+                    audits_consumed: 0,
+                    simulations_consumed: 0
                 })
                 .eq('id', userId);
 

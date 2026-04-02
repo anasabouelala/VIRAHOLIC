@@ -36,14 +36,14 @@ const features = [
 
 const FeaturesSection: React.FC = () => {
     return (
-        <section className="py-12 animate-fade-in relative">
+        <section id="features" aria-labelledby="features-heading" className="py-12 animate-fade-in relative">
             {/* Ambient Background Glows */}
             <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px] -z-10"></div>
             <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-emerald-500/5 rounded-full blur-[100px] -z-10"></div>
 
             <div className="text-center mb-12">
-                <h2 className="text-3xl md:text-4xl font-black text-white tracking-[0.2em] uppercase opacity-90 drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]">
-                    Features
+                <h2 id="features-heading" className="text-3xl md:text-4xl font-black text-white tracking-[0.2em] uppercase opacity-90 drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+                    AEO & GEO Audit Features for Local Businesses
                 </h2>
                 <div className="w-24 h-1 bg-gradient-to-r from-indigo-600 to-emerald-500 mx-auto mt-6 rounded-full blur-[1px]"></div>
             </div>

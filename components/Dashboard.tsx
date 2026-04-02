@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { AnalysisResult, ImpactLevel, AttributeDetail } from '../types';
 import AEOMap from './AEOMap';
@@ -22,6 +21,7 @@ interface Props {
     businessName: string;
     onReset: () => void;
     geminiApiKey?: string;
+    onIncrementSimulation?: () => Promise<void>;
 }
 
 const AttributeCard = ({ title, detail, icon }: { title: string, detail: AttributeDetail, icon: React.ReactNode }) => {
@@ -69,7 +69,7 @@ const AttributeCard = ({ title, detail, icon }: { title: string, detail: Attribu
     )
 }
 
-const Dashboard: React.FC<Props> = ({ data, businessName, onReset, geminiApiKey }) => {
+const Dashboard: React.FC<Props> = ({ data, businessName, onReset, geminiApiKey, onIncrementSimulation }) => {
     const [activeTab, setActiveTab] = useState<'overview' | 'map' | 'llms' | 'citations' | 'deepdive' | 'missions' | 'studio' | 'visual' | 'voice'>('overview');
     const [completedMissions, setCompletedMissions] = useState<string[]>([]);
     const [reviewInput, setReviewInput] = useState('');
@@ -128,6 +128,7 @@ const Dashboard: React.FC<Props> = ({ data, businessName, onReset, geminiApiKey 
             setLocalLlms(updatedLlms);
             setEnrichmentPrompt('');
             setIsEnrichingLLM(false);
+            if (onIncrementSimulation) onIncrementSimulation();
         }, 1200);
     };
 
@@ -176,6 +177,7 @@ const Dashboard: React.FC<Props> = ({ data, businessName, onReset, geminiApiKey 
             
             setLocalVoiceAnswers([newSim, ...localVoiceAnswers]);
             setVoicePrompt('');
+            if (onIncrementSimulation) onIncrementSimulation();
         } catch (error) {
             console.error("Simulation failed:", error);
             const fallback = {
