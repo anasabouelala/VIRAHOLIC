@@ -10,6 +10,8 @@ export const saveAudit = async (userId: string, businessName: string, geoScore: 
                 .from('audits')
                 .select('id')
                 .eq('project_id', projectId)
+                .order('created_at', { ascending: false })
+                .limit(1)
                 .maybeSingle();
 
             if (existing) {

@@ -48,6 +48,7 @@ const App: React.FC = () => {
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [showProjectSettingsModal, setShowProjectSettingsModal] = useState(false);
   const [auditCache, setAuditCache] = useState<Record<string, { result: AnalysisResult, businessName: string }>>({});
+  const [isRestoringProject, setIsRestoringProject] = useState(false);
 
   const [formInfo, setFormInfo] = useState<BusinessInfo>({
     name: '',
@@ -199,7 +200,7 @@ const App: React.FC = () => {
         console.log(`Persistence: Cache HIT for [${currentProject.id}]`);
       } else {
         // Only show loading if we don't have it in cache
-        setState(prev => ({ ...prev, loading: true, error: null }));
+        setIsRestoringProject(true);
       }
 
       try {
@@ -207,6 +208,8 @@ const App: React.FC = () => {
           .from('audits')
           .select('*')
           .eq('project_id', currentProject.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
           .maybeSingle(); 
           
         if (error) {
@@ -226,15 +229,14 @@ const App: React.FC = () => {
           if (auditCache[currentProject.id]) {
             const cached = auditCache[currentProject.id];
             setState({ loading: false, error: null, result: cached.result });
-            return; 
+          } else {
+              // CRITICAL: ONLY reset loading to false if we weren't ALREADY in the middle of a scan
+              // This prevents the background fetch from 'stealing' the loading state from runAnalysis
+              setState(prev => {
+                  if (prev.loading && !prev.result) return prev; // Keep loading if a scan is active
+                  return { ...prev, loading: false, result: null };
+              });
           }
-
-          // CRITICAL: ONLY reset loading to false if we weren't ALREADY in the middle of a scan
-          // This prevents the background fetch from 'stealing' the loading state from runAnalysis
-          setState(prev => {
-              if (prev.loading && !prev.result) return prev; // Keep loading if a scan is active
-              return { ...prev, loading: false, result: null };
-          });
 
           const defaultInfo: BusinessInfo = {
             name: currentProject.business_name || currentProject.name,
@@ -252,6 +254,8 @@ const App: React.FC = () => {
         if (!auditCache[currentProject.id]) {
             setState({ loading: false, error: "Cloud sync failed. Showing fresh scan form.", result: null });
         }
+      } finally {
+        setIsRestoringProject(false);
       }
     };
     
@@ -489,7 +493,13 @@ const App: React.FC = () => {
 
                         <main className="flex-grow p-8 overflow-y-auto relative z-10 h-screen">
                           <div className="max-w-7xl mx-auto pb-20">
-                            {state.loading ? (
+                            {isRestoringProject ? (
+                                <div className="flex flex-col items-center justify-center min-h-[60vh] animate-fade-in">
+                                    <div className="w-16 h-16 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-6"></div>
+                                    <h3 className="text-xl font-bold text-white mb-2">Restoring Environment</h3>
+                                    <p className="text-zinc-500 text-sm">Loading your saved AI audit data...</p>
+                                </div>
+                            ) : state.loading ? (
                                 <LoadingScreen />
                             ) : state.result ? (
                               <ErrorBoundary>
