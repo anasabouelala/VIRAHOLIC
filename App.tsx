@@ -179,6 +179,7 @@ const App: React.FC = () => {
         setCurrentProject(restoredProject);
     } else if (data.length > 0 && !currentProject) {
         setCurrentProject(data[0]);
+        localStorage.setItem('aeoholic_last_project_id', data[0].id);
     }
   };
 
@@ -592,6 +593,7 @@ const App: React.FC = () => {
                             setShowNewProjectModal(false);
                             const { data, success } = await createProject(session.user.id, info.name);
                             if (success) {
+                                localStorage.setItem('aeoholic_last_project_id', data.id);
                                 setCurrentProject(data);
                                 loadProjects(session.user.id);
                                 runAnalysis(info, data.id);
