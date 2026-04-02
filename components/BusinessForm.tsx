@@ -10,9 +10,10 @@ interface Props {
   hideDemo?: boolean;
   initialInfo: BusinessInfo;
   onInfoChange: (info: BusinessInfo) => void;
+  isLocked?: boolean;
 }
 
-const BusinessForm: React.FC<Props> = ({ onSubmit, onDemo, isLoading, hideDemo, initialInfo, onInfoChange }) => {
+const BusinessForm: React.FC<Props> = ({ onSubmit, onDemo, isLoading, hideDemo, initialInfo, onInfoChange, isLocked }) => {
   const info = initialInfo;
   const setInfo = (update: (prev: BusinessInfo) => BusinessInfo) => {
     onInfoChange(update(info));
@@ -31,7 +32,7 @@ const BusinessForm: React.FC<Props> = ({ onSubmit, onDemo, isLoading, hideDemo, 
       <div className="bg-surface border border-border rounded-xl p-1 shadow-2xl">
         <form onSubmit={handleSubmit} className="bg-background rounded-lg p-6 sm:p-8 space-y-6 border border-zinc-900">
 
-          <div className="space-y-5">
+          <div className={`space-y-5 transition-all duration-500 ${isLocked ? 'opacity-50 pointer-events-none' : ''}`}>
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider ml-1">Business Name</label>
               <input
@@ -130,7 +131,9 @@ const BusinessForm: React.FC<Props> = ({ onSubmit, onDemo, isLoading, hideDemo, 
               className={`flex-[2] py-4 px-6 rounded-lg font-bold text-xs tracking-[0.2em] uppercase transition-all active:scale-95
                 ${isLoading
                   ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700'
-                  : 'bg-emerald-500 text-white hover:bg-emerald-400 border border-emerald-400/20 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
+                  : isLocked 
+                    ? 'bg-emerald-500 text-white hover:bg-emerald-400 border border-emerald-400/20 shadow-[0_0_30px_rgba(16,185,129,0.3)] scale-[1.02]'
+                    : 'bg-emerald-500 text-white hover:bg-emerald-400 border border-emerald-400/20 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
                 }`}
             >
               {isLoading ? (
@@ -138,11 +141,16 @@ const BusinessForm: React.FC<Props> = ({ onSubmit, onDemo, isLoading, hideDemo, 
                   <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                   SCANNING...
                 </span>
+              ) : isLocked ? (
+                <span className="flex items-center justify-center gap-3">
+                  <SparklesIcon className="w-4 h-4" />
+                  ACCESS SAVED AUDIT
+                </span>
               ) : (
                 'RUN YOUR AUDIT'
               )}
             </button>
-            {!hideDemo && onDemo && (
+            {!hideDemo && onDemo && !isLocked && (
               <button
                 type="button"
                 onClick={onDemo}
@@ -154,6 +162,22 @@ const BusinessForm: React.FC<Props> = ({ onSubmit, onDemo, isLoading, hideDemo, 
               </button>
             )}
           </div>
+
+          {isLocked && (
+            <div className="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-xl animate-fade-in">
+              <div className="flex items-start gap-4">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <SparklesIcon className="w-4 h-4 text-emerald-500" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-black text-emerald-400 uppercase tracking-widest mb-1">Token Shield Active</p>
+                  <p className="text-[10px] text-zinc-500 font-medium leading-relaxed">
+                    This project already contains diagnostic data. To preserve your tokens, the re-audit button is disabled. Access the saved results above or create a new project for a fresh scan.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </form>
       </div>
     </div>

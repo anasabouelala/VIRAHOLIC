@@ -1,10 +1,19 @@
 import { supabase } from './supabase';
 import { AnalysisResult } from '../types';
 
-export const saveAudit = async (userId: string, businessName: string, geoScore: number, reportData: AnalysisResult, projectId?: string) => {
+export const saveAudit = async (
+    userId: string, 
+    businessName: string, 
+    geoScore: number, 
+    reportData: AnalysisResult, 
+    projectId?: string,
+    status: 'pending' | 'running' | 'completed' | 'failed' = 'completed'
+) => {
     try {
+        // Cast geo_score to integer — PostgREST rejects floats for integer columns
+        const geoScoreInt = Math.round(geoScore || 0);
+
         // 1. Check if an audit already exists for this project
-        // This is more reliable than 'upsert' with complex unique constraints
         if (projectId) {
             const { data: existing } = await supabase
                 .from('audits')
@@ -18,9 +27,10 @@ export const saveAudit = async (userId: string, businessName: string, geoScore: 
                     .from('audits')
                     .update({
                         business_name: businessName,
-                        geo_score: geoScore,
+                        geo_score: geoScoreInt,
                         report_data: reportData,
-                        user_id: userId
+                        user_id: userId,
+                        status: status
                     })
                     .eq('id', existing.id)
                     .select();
@@ -37,9 +47,10 @@ export const saveAudit = async (userId: string, businessName: string, geoScore: 
                 {
                     user_id: userId,
                     business_name: businessName,
-                    geo_score: geoScore,
+                    geo_score: geoScoreInt,
                     report_data: reportData,
-                    project_id: projectId
+                    project_id: projectId,
+                    status: status
                 }
             ])
             .select();

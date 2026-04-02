@@ -29,6 +29,7 @@ interface SidebarProps {
     projects: any[];
     onSelectProject: (project: any) => void;
     currentProjectId?: string;
+    auditProjectIds?: string[];
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ 
@@ -48,6 +49,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     projects,
     onSelectProject,
     currentProjectId,
+    auditProjectIds = [],
 }) => {
     const [isEditing, setIsEditing] = React.useState(false);
     const [editValue, setEditValue] = React.useState(projectName);
@@ -147,34 +149,43 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <div className="mb-8 space-y-2">
                     <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest block mb-3">All Projects</span>
                     <div className="space-y-1.5 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                        {projects.map((proj) => (
-                            <div key={proj.id} className="relative group w-full flex items-center gap-1">
-                                <button
-                                    onClick={() => onSelectProject(proj)}
-                                    className={`flex-grow flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all text-left group/btn
-                                        ${currentProjectId === proj.id 
-                                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.05)]' 
-                                            : 'bg-zinc-900/30 border-zinc-800/50 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
-                                        }`}
-                                >
-                                    <div className={`w-1.5 h-1.5 rounded-full transition-colors flex-shrink-0
-                                        ${currentProjectId === proj.id ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-800 group-hover/btn:bg-zinc-600'}
-                                    `}></div>
-                                    <span className="text-[11px] font-bold truncate">{proj.name}</span>
-                                </button>
-                                <button
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        setProjectToDelete(proj);
-                                    }}
-                                    className="p-2 rounded-lg transition-all flex-shrink-0 text-zinc-600 hover:text-rose-500 hover:bg-rose-500/10"
-                                    title="Delete Project"
-                                >
-                                    <TrashIcon className="w-4 h-4" />
-                                </button>
-                            </div>
-                        ))}
+                        {projects.map((proj) => {
+                            const hasAudit = auditProjectIds.includes(proj.id);
+                            return (
+                                <div key={proj.id} className="relative group w-full flex items-center gap-1">
+                                    <button
+                                        onClick={() => onSelectProject(proj)}
+                                        className={`flex-grow flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all text-left group/btn relative
+                                            ${currentProjectId === proj.id 
+                                                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.05)]' 
+                                                : 'bg-zinc-900/30 border-zinc-800/50 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
+                                            }`}
+                                    >
+                                        <div className={`w-1.5 h-1.5 rounded-full transition-colors flex-shrink-0
+                                            ${currentProjectId === proj.id ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-800 group-hover/btn:bg-zinc-600'}
+                                        `}></div>
+                                        <span className="text-[11px] font-bold truncate flex-grow">{proj.name}</span>
+                                        {hasAudit && (
+                                            <div className="flex items-center gap-1.5 ml-auto">
+                                                <div className="w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                                                <span className="text-[8px] font-black text-emerald-500/60 uppercase tracking-tighter">Saved</span>
+                                            </div>
+                                        )}
+                                    </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setProjectToDelete(proj);
+                                        }}
+                                        className="p-2 rounded-lg transition-all flex-shrink-0 text-zinc-600 hover:text-rose-500 hover:bg-rose-500/10"
+                                        title="Delete Project"
+                                    >
+                                        <TrashIcon className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
 

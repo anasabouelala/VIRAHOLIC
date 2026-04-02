@@ -48,6 +48,7 @@ const App: React.FC = () => {
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [showProjectSettingsModal, setShowProjectSettingsModal] = useState(false);
   const [auditCache, setAuditCache] = useState<Record<string, { result: AnalysisResult, businessName: string }>>({});
+  const [auditProjectIds, setAuditProjectIds] = useState<string[]>([]);
 
   const [formInfo, setFormInfo] = useState<BusinessInfo>({
     name: '',
@@ -110,6 +111,7 @@ const App: React.FC = () => {
         setProjects([]);
         setCurrentProject(null);
         setUserProfile(null);
+        setAuditProjectIds([]);
         navigate('/');
       }
     });
@@ -149,57 +151,49 @@ const App: React.FC = () => {
           console.log("Persistence: Auto-migrating guest audit to new project...");
           await saveAudit(userId, latestBusinessName.current, latestResult.current.overallScore || 0, latestResult.current, newProject.id);
           data = [newProject];
-          // Update cache immediately
+          // Update cache and status dots immediately
           setAuditCache(prev => ({ ...prev, [newProject.id]: { result: latestResult.current, businessName: latestBusinessName.current } }));
+          setAuditProjectIds([newProject.id]);
       }
     }
 
     setProjects(data);
-    
-    // 3. Inform usage
-    const usage = await getUserUsage(userId);
-    setTotalAudits(usage.audits_used);
-    if (userProfile) {
-        setUserProfile({ ...userProfile, audits_consumed: usage.audits_used, simulations_consumed: usage.simulations_used });
-    }
 
-    // 4. Persistence: Restore the last worked-on project if it exists
-    const lastProjectId = localStorage.getItem('aeoholic_last_project_id');
-    const restoredProject = data.find(p => p.id === lastProjectId);
-    
-    if (restoredProject) {
-        setCurrentProject(restoredProject);
-    } else if (data.length > 0 && !currentProject) {
-        setCurrentProject(data[0]);
+    // SMARTER PROJECT AUDIT MAPPING (Non-Hidden)
+    // We fetch which projects have audits to show the status dots in Sidebar
+    if (data.length > 0) {
+        const { data: auditsFound } = await supabase.from('audits')
+            .select('project_id')
+            .in('project_id', data.map(p => p.id));
+        
+        if (auditsFound) {
+            setAuditProjectIds(auditsFound.map(a => a.project_id));
+        }
+
+        // Standard Selection: Restore last or default to first
+        if (!currentProject) {
+            const lastUsedId = localStorage.getItem('aeoholic_last_project_id');
+            const lastProj = data.find(p => p.id === lastUsedId);
+            setCurrentProject(lastProj || data[0]);
+        }
     }
   };
 
   useEffect(() => {
+    let pollTimer: any;
+
     const fetchLatestAudit = async () => {
-      // 1. PROJECT GUARD: If we are already ANALYZING (loading is true), 
-      // do NOT let a background project-switch check interrupt the scan.
-      if (state.loading && !state.result) {
-          console.log("Persistence: Scan in progress, skipping background sync.");
-          return;
-      }
-
-      // 2. Basic safety checks - Ensure we have both project and user
-      if (!currentProject?.id || !session?.user?.id) {
-          console.log("Persistence: Missing Project ID or User Session, skipping fetch.");
-          return;
-      }
+      // 1. PROJECT GUARD: Basic safety checks
+      if (!currentProject?.id || !session?.user?.id) return;
       
-      console.log(`Persistence: Loading project [${currentProject.id}]...`);
+      console.log(`Persistence: Syncing project status [${currentProject.name}]...`);
 
-      // 2. Performance Check: Memory Cache (Instant Transition)
+      // 2. Memory Cache (Instant Transition for completed audits)
       if (auditCache[currentProject.id]) {
         const cached = auditCache[currentProject.id];
         setState({ loading: false, error: null, result: cached.result });
         setBusinessName(cached.businessName);
-        console.log(`Persistence: Cache HIT for [${currentProject.id}]`);
-      } else {
-        // Only show loading if we don't have it in cache
-        setState(prev => ({ ...prev, loading: true, error: null }));
+        return;
       }
 
       try {
@@ -209,33 +203,27 @@ const App: React.FC = () => {
           .eq('project_id', currentProject.id)
           .maybeSingle(); 
           
-        if (error) {
-            console.error(`Persistence DB Error:`, error);
-            throw error;
-        }
+        if (error) throw error;
 
-        if (data && data.report_data) {
-          console.log(`Persistence: Data FOUND for [${currentProject.id}]`);
-          const freshResult = { result: data.report_data, businessName: data.business_name };
-          setState({ loading: false, error: null, result: data.report_data });
-          setBusinessName(data.business_name);
-          setAuditCache(prev => ({ ...prev, [currentProject.id]: freshResult }));
-        } else {
-          console.log(`Persistence: NO audit recorded for [${currentProject.id}]`);
-          
-          if (auditCache[currentProject.id]) {
-            const cached = auditCache[currentProject.id];
-            setState({ loading: false, error: null, result: cached.result });
-            return; 
+        if (data) {
+          if (data.status === 'completed' && data.report_data) {
+            // FINISHED: Show results
+            const freshResult = { result: data.report_data, businessName: data.business_name };
+            setState({ loading: false, error: null, result: data.report_data });
+            setBusinessName(data.business_name);
+            setAuditCache(prev => ({ ...prev, [currentProject.id]: freshResult }));
+          } else if (data.status === 'running' || data.status === 'pending') {
+            // IN PROGRESS: Keep polling every 2 seconds
+            setState({ loading: true, error: null, result: null });
+            setBusinessName(data.business_name);
+            pollTimer = setTimeout(fetchLatestAudit, 2000);
+          } else if (data.status === 'failed') {
+            // FAILED: Show error
+            setState({ loading: false, error: data.error_message || "Audit failed on server.", result: null });
           }
-
-          // CRITICAL: ONLY reset loading to false if we weren't ALREADY in the middle of a scan
-          // This prevents the background fetch from 'stealing' the loading state from runAnalysis
-          setState(prev => {
-              if (prev.loading && !prev.result) return prev; // Keep loading if a scan is active
-              return { ...prev, loading: false, result: null };
-          });
-
+        } else {
+          // EMPTY: Show form
+          setState(prev => ({ ...prev, loading: false, result: null }));
           const defaultInfo: BusinessInfo = {
             name: currentProject.business_name || currentProject.name,
             location: '',
@@ -248,14 +236,13 @@ const App: React.FC = () => {
           setFormInfo(defaultInfo);
         }
       } catch (err: any) {
-        console.error("Persistence Critical Failure:", err);
-        if (!auditCache[currentProject.id]) {
-            setState({ loading: false, error: "Cloud sync failed. Showing fresh scan form.", result: null });
-        }
+        console.error("Persistence Sync Failure:", err);
+        setState({ loading: false, error: "Sync failed.", result: null });
       }
     };
     
     fetchLatestAudit();
+    return () => { if (pollTimer) clearTimeout(pollTimer); };
   }, [currentProject?.id, session?.user?.id]);
 
   useEffect(() => {
@@ -294,47 +281,40 @@ const App: React.FC = () => {
       setState({ loading: true, error: null, result: null });
       setBusinessName(info.name);
 
-      const result = await analyzeBusinessVisibility(info, geminiKey || undefined);
-      setState({ loading: false, error: null, result });
+      const finalProjectId = overrideProjectId || currentProject?.id;
       
-      // If user is logged in, save the audit to the current project
-      if (session?.user?.id) {
-        const finalProjectId = overrideProjectId || currentProject?.id;
-        if (finalProjectId) {
-            setAuditCache(prev => ({ ...prev, [finalProjectId]: { result, businessName: info.name } }));
-        }
+      if (!session?.access_token) {
+          throw new Error("User must be logged in for background audits.");
+      }
+
+      // 1. PROJECT GUARD: Mark as pending immediately for background tracking
+      if (finalProjectId) {
+        console.log("Persistence: Initializing background scan for project:", finalProjectId);
+        await saveAudit(session.user.id, info.name, 0, {} as any, finalProjectId, 'pending');
         
-        console.log("Saving audit to project:", finalProjectId, "for business:", info.name);
-        
-        // 1. Guard against missing ID during the call
-        if (!session?.user?.id || !finalProjectId) {
-            console.error("Critical: Missing ID before saving record. User:", session?.user?.id, "Project:", finalProjectId);
-            setState(prev => ({ ...prev, error: "The audit finished but we lost the project ID. Saving to memory only." }));
-            return;
+        // 2. TRIGGER SERVER-SIDE CLOUD SCAN (The 12 Agents move to the server)
+        const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-audit`;
+        const response = await fetch(functionUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            projectId: finalProjectId,
+            businessInfo: info,
+            userId: session.user.id
+          })
+        });
+
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.error || "Edge Function failed to start.");
         }
 
-        const saveResult = await saveAudit(
-          session.user.id,
-          info.name,
-          result.overallScore || 0,
-          result,
-          finalProjectId
-        );
-        
-        if (!saveResult.success) {
-            console.error("DATABASE SAVE FAILED:", saveResult.error);
-            setState(prev => ({ ...prev, error: `Critical Save Error: ${saveResult.error?.message || "Check Console"}` }));
-        } else {
-            console.log("Audit saved successfully.");
-            // 2. Force Sync: Mark it in cache and then immediately refetch to be 100% sure
-            setAuditCache(prev => ({ ...prev, [finalProjectId]: { result, businessName: info.name } }));
-            // Refresh counts and profile data
-            await loadProjects(session.user.id);
-        }
-        // Increment usage count
-        await incrementAuditUsage(session.user.id);
-        // Refresh projects to update audit counts etc
-        await loadProjects(session.user.id);
+        // 3. DONE: The client can now just wait and poll! 
+        // fetchLatestAudit (which is polling) will take over automatically.
+        console.log("Cloud scan triggered successfully. Polling is active.");
       }
     } catch (err: any) {
       const errorMessage = err?.message || "An unexpected error occurred. Please try again.";
@@ -485,6 +465,7 @@ const App: React.FC = () => {
                               if (proj?.id) localStorage.setItem('aeoholic_last_project_id', proj.id);
                           }}
                           currentProjectId={currentProject?.id}
+                          auditProjectIds={auditProjectIds}
                         />
 
                         <main className="flex-grow p-8 overflow-y-auto relative z-10 h-screen">
@@ -548,6 +529,13 @@ const App: React.FC = () => {
                                     <div className="w-full max-w-xl">
                                       <BusinessForm 
                                           onSubmit={(info) => {
+                                              const isLocked = !!currentProject && auditProjectIds.includes(currentProject.id);
+                                              if (isLocked) {
+                                                if (auditCache[currentProject?.id]) {
+                                                  setState({ loading: false, error: null, result: auditCache[currentProject.id].result });
+                                                }
+                                                return;
+                                              }
                                               if (currentProject?.id) {
                                                   runAnalysis(info, currentProject.id);
                                                   navigate('/dashboard');
@@ -559,6 +547,7 @@ const App: React.FC = () => {
                                           isLoading={state.loading} 
                                           initialInfo={formInfo}
                                           onInfoChange={setFormInfo}
+                                          isLocked={!!currentProject && auditProjectIds.includes(currentProject.id)}
                                       />
                                     </div>
                                 </div>
