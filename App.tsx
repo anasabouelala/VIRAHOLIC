@@ -98,11 +98,18 @@ const App: React.FC = () => {
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session);
       if (session) {
+        const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
         fetchProfile(session.user.id);
         loadProjects(session.user.id);
+
+        // Check if user is unpaid, and immediately prompt plan selection if so
+        if (event === 'SIGNED_IN' && data && !data.geo_score) {
+             setShowPlanSelection(true);
+        }
+
         // On sign-in or sign-up events, always go to dashboard
         if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
           navigate('/dashboard');
@@ -267,7 +274,7 @@ const App: React.FC = () => {
     if (storedGeminiKey) setGeminiKey(storedGeminiKey);
   }, []);
 
-  // Teaser Logic: Trigger paywall after 3 seconds if not subscribed (Exclude Demo)
+  // Teaser Logic: Trigger paywall after 6 seconds if not subscribed (Exclude Demo)
   useEffect(() => {
     const isDemo = businessName?.includes('(DEMO)');
     if (state.result && !state.loading && !isDemo && (!session || !userProfile?.geo_score)) {
@@ -275,7 +282,7 @@ const App: React.FC = () => {
         if (!session || !userProfile?.geo_score) {
           setShowPaywall(true);
         }
-      }, 3000);
+      }, 6000);
       return () => clearTimeout(timer);
     }
   }, [state.result, state.loading, session, userProfile, businessName]);
@@ -615,7 +622,7 @@ const App: React.FC = () => {
                         {showPaywall && (
                             <PaywallOverlay 
                                 businessName={businessName}
-                                onAction={() => setShowPlanSelection(true)}
+                                onAction={() => session ? setShowPlanSelection(true) : setShowAuthModal(true)}
                                 isLoggedIn={!!session}
                             />
                         )}
@@ -725,7 +732,15 @@ const App: React.FC = () => {
                         </div>
                     </main>
 
-                    <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} onSuccess={() => { setShowAuthModal(false); if (userProfile?.geo_score) setShowPaywall(false); navigate('/dashboard'); }} />
+                    <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} onSuccess={() => {
+                        setShowAuthModal(false);
+                        if (userProfile?.geo_score) {
+                            setShowPaywall(false);
+                        } else {
+                            setShowPlanSelection(true);
+                        }
+                        navigate('/dashboard');
+                    }} />
                     
                     {showPlanSelection && (
                         <PlanSelection 
