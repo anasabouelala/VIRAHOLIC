@@ -35,7 +35,7 @@ const App: React.FC = () => {
   const [businessName, setBusinessName] = useState<string>('');
   const [showSettings, setShowSettings] = useState(false);
   const [geminiKey, setGeminiKey] = useState('');
-  
+
   // Auth & Paywall State
   const [session, setSession] = useState<any>(null);
   const [showPaywall, setShowPaywall] = useState(false);
@@ -68,7 +68,7 @@ const App: React.FC = () => {
     keywords: '',
     language: 'English'
   });
-  
+
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -132,29 +132,29 @@ const App: React.FC = () => {
     const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
     const usage = await getUserUsage(userId);
     if (data) {
-        setUserProfile({ 
-            ...data, 
-            audits_consumed: usage.audits_used, 
-            simulations_consumed: usage.simulations_used,
-            subscription_started_at: usage.started_at
-        });
+      setUserProfile({
+        ...data,
+        audits_consumed: usage.audits_used,
+        simulations_consumed: usage.simulations_used,
+        subscription_started_at: usage.started_at
+      });
     }
   };
 
   const loadProjects = async (userId: string, allowAutoCreate: boolean = true) => {
     let data = await getProjects(userId);
-    
+
     // Auto-migrate landing page audits to the user's account by building a default project for them
     // ONLY if we're allowed to and it's not a deletion cleanup
     if (allowAutoCreate && data.length === 0 && latestResult.current && latestBusinessName.current) {
       const { data: newProject, success } = await createProject(userId, latestBusinessName.current, latestBusinessName.current);
       if (success && newProject) {
-          console.log("Persistence: Auto-migrating guest audit to new project...");
-          await saveAudit(userId, latestBusinessName.current, latestResult.current.overallScore || 0, latestResult.current, newProject.id);
-          data = [newProject];
-          // Update cache and status dots immediately
-          setAuditCache(prev => ({ ...prev, [newProject.id]: { result: latestResult.current, businessName: latestBusinessName.current } }));
-          setAuditProjectIds([newProject.id]);
+        console.log("Persistence: Auto-migrating guest audit to new project...");
+        await saveAudit(userId, latestBusinessName.current, latestResult.current.overallScore || 0, latestResult.current, newProject.id);
+        data = [newProject];
+        // Update cache and status dots immediately
+        setAuditCache(prev => ({ ...prev, [newProject.id]: { result: latestResult.current, businessName: latestBusinessName.current } }));
+        setAuditProjectIds([newProject.id]);
       }
     }
 
@@ -163,20 +163,20 @@ const App: React.FC = () => {
     // SMARTER PROJECT AUDIT MAPPING (Non-Hidden)
     // We fetch which projects have audits to show the status dots in Sidebar
     if (data.length > 0) {
-        const { data: auditsFound } = await supabase.from('audits')
-            .select('project_id')
-            .in('project_id', data.map(p => p.id));
-        
-        if (auditsFound) {
-            setAuditProjectIds(auditsFound.map(a => a.project_id));
-        }
+      const { data: auditsFound } = await supabase.from('audits')
+        .select('project_id')
+        .in('project_id', data.map(p => p.id));
 
-        // Standard Selection: Restore last or default to first
-        if (!currentProject) {
-            const lastUsedId = localStorage.getItem('aeoholic_last_project_id');
-            const lastProj = data.find(p => p.id === lastUsedId);
-            setCurrentProject(lastProj || data[0]);
-        }
+      if (auditsFound) {
+        setAuditProjectIds(auditsFound.map(a => a.project_id));
+      }
+
+      // Standard Selection: Restore last or default to first
+      if (!currentProject) {
+        const lastUsedId = localStorage.getItem('aeoholic_last_project_id');
+        const lastProj = data.find(p => p.id === lastUsedId);
+        setCurrentProject(lastProj || data[0]);
+      }
     }
   };
 
@@ -186,7 +186,7 @@ const App: React.FC = () => {
     const fetchLatestAudit = async () => {
       // 1. PROJECT GUARD: Basic safety checks
       if (!currentProject?.id || !session?.user?.id) return;
-      
+
       console.log(`Persistence: Syncing project status [${currentProject.name}]...`);
 
       // 2. Memory Cache (Instant Transition for completed audits)
@@ -202,8 +202,8 @@ const App: React.FC = () => {
           .from('audits')
           .select('*')
           .eq('project_id', currentProject.id)
-          .maybeSingle(); 
-          
+          .maybeSingle();
+
         if (error) throw error;
 
         if (data) {
@@ -241,7 +241,7 @@ const App: React.FC = () => {
         setState({ loading: false, error: "Sync failed.", result: null });
       }
     };
-    
+
     fetchLatestAudit();
     return () => { if (pollTimer) clearTimeout(pollTimer); };
   }, [currentProject?.id, session?.user?.id]);
@@ -258,8 +258,8 @@ const App: React.FC = () => {
       if (!session) {
         // Guest Teaser Flow: 6 Seconds then Blur and show Auth
         const timer = setTimeout(() => {
-           setShowPaywall(true); // Triggers Blur
-           setShowAuthModal(true); // Forces Login
+          setShowPaywall(true); // Triggers Blur
+          setShowAuthModal(true); // Forces Login
         }, 6000);
         return () => clearTimeout(timer);
       }
@@ -268,10 +268,10 @@ const App: React.FC = () => {
 
   // Dashboard Auto-Pricing Pop-up (Every time if no plan)
   useEffect(() => {
-     if (session && location.pathname === '/dashboard' && userProfile && !userProfile.geo_score) {
-         setShowPaywall(true);
-         setShowPlanSelection(true);
-     }
+    if (session && location.pathname === '/dashboard' && userProfile && !userProfile.geo_score) {
+      setShowPaywall(true);
+      setShowPlanSelection(true);
+    }
   }, [session, location.pathname, userProfile]);
 
   const saveSettings = () => {
@@ -281,7 +281,7 @@ const App: React.FC = () => {
 
   const runAnalysis = async (info: BusinessInfo, overrideProjectId?: string) => {
     const finalProjectId = overrideProjectId || currentProject?.id;
-    
+
     if (!finalProjectId) {
       console.error("Critical: runAnalysis called without any projectId.");
       setState({ loading: false, error: "Please select or create a project first.", result: null });
@@ -293,16 +293,16 @@ const App: React.FC = () => {
       setBusinessName(info.name);
 
       const finalProjectId = overrideProjectId || currentProject?.id;
-      
+
       if (!session?.access_token) {
-          throw new Error("User must be logged in for background audits.");
+        throw new Error("User must be logged in for background audits.");
       }
 
       // 1. PROJECT GUARD: Mark as pending immediately for background tracking
       if (finalProjectId) {
         console.log("Persistence: Initializing background scan for project:", finalProjectId);
         await saveAudit(session.user.id, info.name, 0, {} as any, finalProjectId, 'pending');
-        
+
         // 2. TRIGGER SERVER-SIDE CLOUD SCAN (The 12 Agents move to the server)
         const functionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-audit`;
         const response = await fetch(functionUrl, {
@@ -319,8 +319,8 @@ const App: React.FC = () => {
         });
 
         if (!response.ok) {
-            const errData = await response.json();
-            throw new Error(errData.error || "Edge Function failed to start.");
+          const errData = await response.json();
+          throw new Error(errData.error || "Edge Function failed to start.");
         }
 
         // 3. DONE: The client can now just wait and poll! 
@@ -337,10 +337,10 @@ const App: React.FC = () => {
     try {
       setState({ loading: true, error: null, result: null });
       setBusinessName(info.name);
-      
+
       const result = await analyzeBusinessVisibility(info, geminiKey || undefined);
       setState({ loading: false, error: null, result });
-      
+
     } catch (err: any) {
       setState({ loading: false, error: err.message, result: null });
     }
@@ -349,7 +349,7 @@ const App: React.FC = () => {
   const handleDemoRequest = () => {
     setBusinessName("Blue Bottle Coffee (DEMO)");
     setState({ loading: true, error: null, result: null });
-    
+
     // Simulate a shorter but realistic 3-second scan for the demo
     setTimeout(() => {
       setState({ loading: false, error: null, result: DEMO_DATA });
@@ -358,29 +358,29 @@ const App: React.FC = () => {
 
   const handleReset = () => {
     setState({ loading: false, error: null, result: null });
-    
+
     // Clear the specific project from cache so the form shows up fresh
     if (currentProject?.id) {
-        setAuditCache(prev => {
-            const { [currentProject.id]: _, ...rest } = prev;
-            return rest;
-        });
+      setAuditCache(prev => {
+        const { [currentProject.id]: _, ...rest } = prev;
+        return rest;
+      });
     }
 
     // Reset business name to the project's default for the new scan
     if (currentProject) {
-        const defaultInfo: BusinessInfo = {
-            name: currentProject.business_name || currentProject.name,
-            location: '',
-            category: '',
-            website: '',
-            keywords: '',
-            language: 'English'
-        };
-        setBusinessName(defaultInfo.name);
-        setFormInfo(defaultInfo);
+      const defaultInfo: BusinessInfo = {
+        name: currentProject.business_name || currentProject.name,
+        location: '',
+        category: '',
+        website: '',
+        keywords: '',
+        language: 'English'
+      };
+      setBusinessName(defaultInfo.name);
+      setFormInfo(defaultInfo);
     } else {
-        setBusinessName('');
+      setBusinessName('');
     }
   };
 
@@ -394,7 +394,7 @@ const App: React.FC = () => {
 
   const handleRenameProject = async (newName: string) => {
     if (!currentProject) return;
-    
+
     // Optimistic local update for instant UI feedback
     const originalProject = { ...currentProject };
     const originalProjects = [...projects];
@@ -428,15 +428,15 @@ const App: React.FC = () => {
 
     // 2. Clear state and optimistically remove from UI
     if (isDeletingCurrent) {
-        setCurrentProject(null);
-        setState({ loading: false, error: null, result: null });
-        setBusinessName('');
+      setCurrentProject(null);
+      setState({ loading: false, error: null, result: null });
+      setBusinessName('');
     }
     setProjects(prev => prev.filter(p => p.id !== projectId));
 
     // 3. Inform database
     const { success } = await deleteProject(projectId);
-    
+
     if (success) {
       if (session) {
         // Refresh with auto-creation disabled (already configured in loadProjects)
@@ -446,8 +446,8 @@ const App: React.FC = () => {
       // 4. Rollback on failure
       setProjects(originalProjects);
       if (isDeletingCurrent) {
-          // Re-fetch project to restore if we cleared it
-          await loadProjects(session.user.id, false);
+        // Re-fetch project to restore if we cleared it
+        await loadProjects(session.user.id, false);
       }
       console.error('Failed to delete project from database. Rolling back UI.');
     }
@@ -455,331 +455,335 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col text-zinc-100 relative overflow-x-hidden">
-        <Routes>
-            <Route path="/dashboard" element={
-                !session ? <Navigate to="/" replace /> : (
-                    <div className="flex bg-background min-h-screen text-zinc-100 relative w-full">
-                        <div className="fixed inset-0 z-0 opacity-20 pointer-events-none bg-grid"></div>
-                        
-                        <Sidebar 
-                          projectName={currentProject?.name || 'My Project'}
-                          brandName={currentProject?.brand_name}
-                          userEmail={session?.user?.email}
-                          planName={userProfile?.plan_name}
-                          auditsUsed={userProfile?.audits_consumed || 0}
-                          promptsUsed={userProfile?.simulations_consumed || 0}
-                          onAddProject={() => setShowNewProjectModal(true)}
-                          onSettings={() => setShowProjectSettingsModal(true)}
-                          onUpgrade={() => setShowPlanSelection(true)}
-                          onRenameProject={handleRenameProject}
-                          onDeleteProject={handleDeleteProject}
-                          onLogout={async () => {
-                              await supabase.auth.signOut();
-                              localStorage.removeItem('aeoholic_last_project_id');
-                              navigate('/', { replace: true });
-                          }}
-                          projects={projects}
-                          onSelectProject={(proj) => {
-                              setCurrentProject(proj);
-                              if (proj?.id) localStorage.setItem('aeoholic_last_project_id', proj.id);
-                          }}
-                          currentProjectId={currentProject?.id}
-                          auditProjectIds={auditProjectIds}
-                        />
+      <Routes>
+        <Route path="/dashboard" element={
+          !session ? <Navigate to="/" replace /> : (
+            <div className="flex bg-background min-h-screen text-zinc-100 relative w-full">
+              <div className="fixed inset-0 z-0 opacity-20 pointer-events-none bg-grid"></div>
 
-                        <main className="flex-grow p-8 overflow-y-auto relative z-10 h-screen">
-                          <div className="max-w-7xl mx-auto pb-20">
-                            {state.loading ? (
-                                <LoadingScreen />
-                            ) : state.result ? (
-                              <ErrorBoundary>
-                                <div className="relative">
-                                    <div className={`${showPaywall ? 'blur-xl select-none pointer-events-none' : ''} transition-all duration-1000`}>
-                                        <Dashboard
-                                          data={state.result}
-                                          businessName={businessName}
-                                          onReset={handleReset}
-                                          geminiApiKey={geminiKey}
-                                          onIncrementSimulation={async () => {
-                                              if (session?.user?.id) {
-                                                  await incrementSimulationUsage(session.user.id);
-                                                  const usage = await getUserUsage(session.user.id);
-                                                  setUserProfile(prev => ({ ...prev, simulations_consumed: usage.simulations_used }));
-                                              }
-                                          }}
-                                        />
-                                    </div>
-                                </div>
-                              </ErrorBoundary>
-                            ) : !currentProject && projects.length === 0 ? (
-                                <div className="text-center py-20 px-4 animate-fade-in">
-                                    <div className="w-24 h-24 bg-emerald-500/10 border border-emerald-500/20 rounded-[2rem] flex items-center justify-center mx-auto mb-10 shadow-[0_0_50px_rgba(16,185,129,0.15)] group hover:scale-105 transition-all duration-500">
-                                        <SparklesIcon className="w-12 h-12 text-emerald-500 group-hover:rotate-12 transition-transform" />
-                                    </div>
-                                    <h2 className="text-5xl font-display font-bold text-white mb-6 tracking-tight">Ready for your <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">first deep-agent audit?</span></h2>
-                                    <p className="text-zinc-400 max-w-xl mx-auto text-xl mb-12 leading-relaxed">Your project suite is currently empty. Create your first diagnostic environment to start mapping AI visibility for any local business.</p>
-                                    
-                                    <button 
-                                      onClick={() => setShowNewProjectModal(true)}
-                                      className="px-10 py-5 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs uppercase tracking-[0.3em] rounded-2xl transition-all shadow-[0_0_40px_rgba(16,185,129,0.3)] hover:shadow-[0_0_60px_rgba(16,185,129,0.5)] hover:-translate-y-1 active:scale-95"
-                                    >
-                                        Create Your First Project
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center min-h-[80vh] animate-slide-up">
-                                    {state.error && (
-                                        <div className="w-full max-w-2xl bg-rose-500/10 border border-rose-500/20 rounded-2xl p-6 mb-8 text-center animate-fade-in shadow-[0_0_20px_rgba(244,63,94,0.1)]">
-                                            <div className="flex items-center justify-center gap-3 mb-2">
-                                                <AlertCircleIcon className="w-5 h-5 text-rose-500" />
-                                                <h3 className="text-rose-500 font-bold uppercase tracking-widest text-sm">Audit System Error</h3>
-                                            </div>
-                                            <p className="text-zinc-400 text-sm font-medium">{state.error}</p>
-                                        </div>
-                                    )}
-                                    <div className="text-center mb-12">
-                                        <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500/20 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-[0_0_50px_rgba(16,185,129,0.1)]">
-                                            <SparklesIcon className="w-10 h-10 text-emerald-500" />
-                                        </div>
-                                        <h2 className="text-4xl font-bold text-white mb-4 tracking-tight">Active Project: {currentProject?.name}</h2>
-                                        <p className="text-zinc-500 max-w-md mx-auto text-lg">Your diagnostic environment is ready. Initialize the 12-agent research pipeline for <span className="text-white font-bold">{currentProject?.business_name || 'this business'}</span> to see local performance.</p>
-                                    </div>
-                                    
-                                    <div className="w-full max-w-xl">
-                                      <BusinessForm 
-                                          onSubmit={(info) => {
-                                              const isLocked = !!currentProject && auditProjectIds.includes(currentProject.id);
-                                              if (isLocked) {
-                                                if (auditCache[currentProject?.id]) {
-                                                  setState({ loading: false, error: null, result: auditCache[currentProject.id].result });
-                                                }
-                                                return;
-                                              }
-                                              if (currentProject?.id) {
-                                                  runAnalysis(info, currentProject.id);
-                                                  navigate('/dashboard');
-                                              } else {
-                                                  setState({ loading: false, error: "Please select a project before starting an audit.", result: null });
-                                              }
-                                          }} 
-                                          onDemo={handleDemoRequest} 
-                                          isLoading={state.loading} 
-                                          initialInfo={formInfo}
-                                          onInfoChange={setFormInfo}
-                                          isLocked={!!currentProject && auditProjectIds.includes(currentProject.id)}
-                                      />
-                                    </div>
-                                </div>
-                            )}
-                          </div>
-                        </main>
+              <Sidebar
+                projectName={currentProject?.name || 'My Project'}
+                brandName={currentProject?.brand_name}
+                userEmail={session?.user?.email}
+                planName={userProfile?.plan_name}
+                auditsUsed={userProfile?.audits_consumed || 0}
+                promptsUsed={userProfile?.simulations_consumed || 0}
+                onAddProject={() => setShowNewProjectModal(true)}
+                onSettings={() => setShowProjectSettingsModal(true)}
+                onUpgrade={() => setShowPlanSelection(true)}
+                onRenameProject={handleRenameProject}
+                onDeleteProject={handleDeleteProject}
+                onLogout={async () => {
+                  await supabase.auth.signOut();
+                  localStorage.removeItem('aeoholic_last_project_id');
+                  navigate('/', { replace: true });
+                }}
+                projects={projects}
+                onSelectProject={(proj) => {
+                  setCurrentProject(proj);
+                  if (proj?.id) localStorage.setItem('aeoholic_last_project_id', proj.id);
+                }}
+                currentProjectId={currentProject?.id}
+                auditProjectIds={auditProjectIds}
+              />
 
-                        <NewProjectModal 
-                          isOpen={showNewProjectModal}
-                          onClose={() => setShowNewProjectModal(false)}
-                          initialInfo={modalFormInfo}
-                          onInfoChange={setModalFormInfo}
-                          onSubmit={async (info) => {
-                            setShowNewProjectModal(false);
-                            const { data, success } = await createProject(session.user.id, info.name);
-                            if (success) {
-                                setCurrentProject(data);
-                                loadProjects(session.user.id);
-                                runAnalysis(info, data.id);
-                            }
-                          }}
-                          isLoading={state.loading}
-                        />
-
-                        <SupportModal 
-                            isOpen={showProjectSettingsModal}
-                            onClose={() => setShowProjectSettingsModal(false)}
-                            userEmail={session?.user?.email || 'contact@aeoholic.com'}
-                            userId={session?.user?.id}
-                        />
-
-                        {showPlanSelection && (
-                          <PlanSelection 
-                            userId={session?.user?.id} 
-                            onClose={() => setShowPlanSelection(false)}
-                            onSuccess={async () => {
-                              await fetchProfile(session.user.id);
-                              setShowPlanSelection(false);
-                              setShowPaywall(false);
-                            }} 
+              <main className="flex-grow p-8 overflow-y-auto relative z-10 h-screen">
+                <div className="max-w-7xl mx-auto pb-20">
+                  {state.loading ? (
+                    <LoadingScreen />
+                  ) : state.result ? (
+                    <ErrorBoundary>
+                      <div className="relative">
+                        <div className={`${showPaywall ? 'blur-xl select-none pointer-events-none' : ''} transition-all duration-1000`}>
+                          <Dashboard
+                            data={state.result}
+                            businessName={businessName}
+                            onReset={handleReset}
+                            geminiApiKey={geminiKey}
+                            onIncrementSimulation={async () => {
+                              if (session?.user?.id) {
+                                await incrementSimulationUsage(session.user.id);
+                                const usage = await getUserUsage(session.user.id);
+                                setUserProfile(prev => ({ ...prev, simulations_consumed: usage.simulations_used }));
+                              }
+                            }}
                           />
-                        )}
+                        </div>
+                      </div>
+                    </ErrorBoundary>
+                  ) : !currentProject && projects.length === 0 ? (
+                    <div className="text-center py-20 px-4 animate-fade-in">
+                      <div className="w-24 h-24 bg-emerald-500/10 border border-emerald-500/20 rounded-[2rem] flex items-center justify-center mx-auto mb-10 shadow-[0_0_50px_rgba(16,185,129,0.15)] group hover:scale-105 transition-all duration-500">
+                        <SparklesIcon className="w-12 h-12 text-emerald-500 group-hover:rotate-12 transition-transform" />
+                      </div>
+                      <h2 className="text-5xl font-display font-bold text-white mb-6 tracking-tight">Ready for your <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">first deep-agent audit?</span></h2>
+                      <p className="text-zinc-400 max-w-xl mx-auto text-xl mb-12 leading-relaxed">Your project suite is currently empty. Create your first diagnostic environment to start mapping AI visibility for any local business.</p>
 
-                        {showPaywall && (
-                            <PaywallOverlay 
-                                businessName={businessName}
-                                onAction={() => setShowPlanSelection(true)}
-                                isLoggedIn={!!session}
-                            />
-                        )}
+                      <button
+                        onClick={() => setShowNewProjectModal(true)}
+                        className="px-10 py-5 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs uppercase tracking-[0.3em] rounded-2xl transition-all shadow-[0_0_40px_rgba(16,185,129,0.3)] hover:shadow-[0_0_60px_rgba(16,185,129,0.5)] hover:-translate-y-1 active:scale-95"
+                      >
+                        Create Your First Project
+                      </button>
                     </div>
-                )
-            } />
-            <Route path="*" element={
-                <div className="min-h-screen bg-background flex flex-col text-zinc-100 relative overflow-x-hidden">
-                    {/* Background Grid */}
-                    <div className="fixed inset-0 z-0 opacity-20 pointer-events-none bg-grid"></div>
-
-                    {/* Subtle ambient light */}
-                    <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-white opacity-[0.03] blur-[120px] pointer-events-none z-0"></div>
-
-                    {/* Navigation */}
-                    <nav aria-label="Main navigation" className="border-b border-border bg-background/50 backdrop-blur-md sticky top-0 z-40" itemScope itemType="https://schema.org/Organization">
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                            <div className="flex justify-between h-16">
-                                <div className="flex items-center gap-3 cursor-pointer" onClick={() => { handleReset(); navigate('/'); }} role="button" aria-label="AEOHOLIC Home">
-                                    <span itemProp="name" className="font-display font-bold text-lg tracking-tight text-white">AEOHOLIC</span>
-                                </div>
-                                <div className="hidden md:flex items-center gap-8">
-                                    {['features', 'comparison', 'pricing', 'faq'].map((item) => (
-                                        <a key={item} href={`#${item}`} onClick={() => navigate('/')} className="text-[10px] font-black text-zinc-500 hover:text-white uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95">{item}</a>
-                                    ))}
-                                </div>
-                                <div className="flex items-center gap-6">
-                                    {session ? (
-                                        <div className="flex items-center gap-4">
-                                            <span className="text-[10px] font-black text-white uppercase tracking-widest cursor-pointer" onClick={() => navigate('/dashboard')}>{session.user.email}</span>
-                                            <button onClick={() => supabase.auth.signOut()} className="text-[10px] font-black text-zinc-500 hover:text-rose-400 uppercase tracking-[0.3em] transition-all">Logout</button>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <button onClick={() => setShowAuthModal(true)} className="text-[10px] font-black text-zinc-500 hover:text-white uppercase tracking-[0.3em] transition-all">Log In</button>
-                                            <button onClick={() => setShowAuthModal(true)} className="px-6 py-2 bg-white/5 border border-white/10 rounded-full text-[10px] font-black text-white hover:bg-white/10 uppercase tracking-[0.2em] transition-all shadow-xl backdrop-blur-md">Sign Up</button>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center min-h-[80vh] animate-slide-up">
+                      {state.error && (
+                        <div className="w-full max-w-2xl bg-rose-500/10 border border-rose-500/20 rounded-2xl p-6 mb-8 text-center animate-fade-in shadow-[0_0_20px_rgba(244,63,94,0.1)]">
+                          <div className="flex items-center justify-center gap-3 mb-2">
+                            <AlertCircleIcon className="w-5 h-5 text-rose-500" />
+                            <h3 className="text-rose-500 font-bold uppercase tracking-widest text-sm">Audit System Error</h3>
+                          </div>
+                          <p className="text-zinc-400 text-sm font-medium">{state.error}</p>
                         </div>
-                    </nav>
-
-                    <main role="main" className="flex-grow py-8 px-4 sm:px-6 lg:px-8 relative z-10">
-                        <div className="max-w-7xl mx-auto">
-                            {state.error && (
-                                <div className="mb-8 bg-red-950/30 border border-red-900/50 p-4 rounded-lg max-w-2xl mx-auto backdrop-blur-sm animate-fade-in">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                                        <p className="text-sm text-red-200 font-mono">ERROR: {state.error}</p>
-                                    </div>
-                                </div>
-                            )}
-
-                            <Routes>
-                                <Route path="/privacy" element={<StaticPage title="Privacy Policy" onBack={() => navigate('/')}><hgroup><h3 className="text-white text-lg font-bold italic tracking-tight uppercase">1. Data Sovereignty</h3></hgroup><p>We believe your audit data should remain yours...</p></StaticPage>} />
-                                <Route path="/terms" element={<StaticPage title="Terms of Service" onBack={() => navigate('/')}><hgroup><h3 className="text-white text-lg font-bold italic tracking-tight uppercase">1. Intent and Usage</h3></hgroup><p>AEOHOLIC is a diagnostic suite for SMEs...</p></StaticPage>} />
-                                <Route path="/" element={
-                                    state.loading ? <LoadingScreen /> : !state.result ? (
-                                        <div className="flex flex-col items-center justify-center min-h-[60vh] animate-slide-up">
-                                            <header className="text-center mb-10 max-w-5xl px-4 mx-auto">
-                                                <h1 className="text-3xl sm:text-5xl md:text-6xl font-display font-bold text-white mb-8 sm:mb-12 tracking-[-0.02em] leading-[1.1] py-2 px-6">The most complete <br className="hidden sm:block" /><span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-500">AEO/GEO audits</span> <br className="hidden sm:block" />for Local Businesses.</h1>
-                                                <p className="text-lg sm:text-xl md:text-2xl text-zinc-400 max-w-3xl mx-auto leading-relaxed font-medium tracking-tight opacity-90 px-2 sm:px-0">Scale with <span className="text-white font-black underline decoration-emerald-500/30">12 AI Agents</span> built for specialists.</p>
-                                            </header>
-                                            <section aria-label="Business Selection Form">
-                                                <BusinessForm 
-                                                    onSubmit={(info) => {
-                                                        if (session) {
-                                                            if (currentProject?.id) {
-                                                                runAnalysis(info, currentProject.id);
-                                                                navigate('/dashboard');
-                                                            } else {
-                                                                setState({ loading: false, error: "Please select a project before starting an audit.", result: null });
-                                                            }
-                                                        } else {
-                                                            runGuestAnalysis(info);
-                                                        }
-                                                    }} 
-                                                    onDemo={handleDemoRequest} 
-                                                    isLoading={state.loading} 
-                                                    initialInfo={formInfo}
-                                                    onInfoChange={setFormInfo}
-                                                />
-                                            </section>
-                                            <div className="w-full mt-4 pt-8 border-t border-border/10"><FeaturesSection /></div>
-                                            <div className="w-full"><ComparisonSection /></div>
-                                            <div className="w-full"><PricingSection onSelectPlan={() => session ? setShowPlanSelection(true) : setShowAuthModal(true)} /></div>
-                                            <div className="w-full"><FAQSection /></div>
-                                        </div>
-                                    ) : (session && businessName !== "Blue Bottle Coffee (DEMO)") ? (
-                                        <Navigate to="/dashboard" replace />
-                                    ) : (
-                                        <ErrorBoundary>
-                                            <div className="relative">
-                                                <div className={`${showPaywall ? 'blur-xl select-none pointer-events-none' : ''} transition-all duration-1000`}>
-                                                    <Dashboard data={state.result} businessName={businessName} onReset={handleReset} geminiApiKey={geminiKey} />
-                                                </div>
-                                                {showPaywall && (
-                                                    <PaywallOverlay 
-                                                        businessName={businessName} 
-                                                        onAction={() => session ? setShowPlanSelection(true) : setShowAuthModal(true)} 
-                                                        isLoggedIn={!!session}
-                                                    />
-                                                )}
-                                            </div>
-                                        </ErrorBoundary>
-                                    )
-                                } />
-                                <Route path="*" element={<Navigate to="/" replace />} />
-                            </Routes>
+                      )}
+                      <div className="text-center mb-12">
+                        <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500/20 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-[0_0_50px_rgba(16,185,129,0.1)]">
+                          <SparklesIcon className="w-10 h-10 text-emerald-500" />
                         </div>
-                    </main>
+                        <h2 className="text-4xl font-bold text-white mb-4 tracking-tight">Active Project: {currentProject?.name}</h2>
+                        <p className="text-zinc-500 max-w-md mx-auto text-lg">Your diagnostic environment is ready. Initialize the 12-agent research pipeline for <span className="text-white font-bold">{currentProject?.business_name || 'this business'}</span> to see local performance.</p>
+                      </div>
 
-                    <AuthModal 
-                        isOpen={showAuthModal} 
-                        onClose={() => { setShowAuthModal(false); setPendingCheckoutUrl(null); }} 
-                        onSuccess={async () => { 
-                            setShowAuthModal(false); 
-                            
-                            // Check if new user & clicked a pricing table plan
-                            if (pendingCheckoutUrl) {
-                                const { data: { session: newSession } } = await supabase.auth.getSession();
-                                if (newSession && newSession.user) {
-                                    const signupTime = new Date(newSession.user.created_at).getTime();
-                                    const now = Date.now();
-                                    if (now - signupTime < 6000) { // New user (<6s old)
-                                        const url = new URL(pendingCheckoutUrl);
-                                        url.searchParams.set('checkout[custom][user_id]', newSession.user.id);
-                                        const win = window as any;
-                                        if (win.LemonSqueezy) {
-                                            win.LemonSqueezy.Url.Open(url.toString());
-                                        } else {
-                                            window.location.href = url.toString();
-                                        }
-                                        setPendingCheckoutUrl(null);
-                                        return;
-                                    }
-                                }
-                                setPendingCheckoutUrl(null);
+                      <div className="w-full max-w-xl">
+                        <BusinessForm
+                          onSubmit={(info) => {
+                            const isLocked = !!currentProject && auditProjectIds.includes(currentProject.id);
+                            if (isLocked) {
+                              if (auditCache[currentProject?.id]) {
+                                setState({ loading: false, error: null, result: auditCache[currentProject.id].result });
+                              }
+                              return;
                             }
-                            navigate('/dashboard'); 
-                        }} 
-                    />
-                    
-                    {showPlanSelection && (
-                        <PlanSelection 
-                            userId={session?.user?.id} 
-                            onClose={() => setShowPlanSelection(false)} 
-                            onSuccess={async () => { await fetchProfile(session.user.id); setShowPlanSelection(false); setShowPaywall(false); }} 
+                            if (currentProject?.id) {
+                              runAnalysis(info, currentProject.id);
+                              navigate('/dashboard');
+                            } else {
+                              setState({ loading: false, error: "Please select a project before starting an audit.", result: null });
+                            }
+                          }}
+                          onDemo={handleDemoRequest}
+                          isLoading={state.loading}
+                          initialInfo={formInfo}
+                          onInfoChange={setFormInfo}
+                          isLocked={!!currentProject && auditProjectIds.includes(currentProject.id)}
                         />
-                    )}
-
-                    <footer aria-label="Site footer" className="border-t border-border mt-auto relative z-10 bg-background py-12">
-                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-8">
-                            <span className="font-display font-black text-2xl tracking-tighter text-emerald-500">AEOHOLIC<span className="text-white">.com</span></span>
-                             <div className="flex flex-wrap justify-center gap-10 text-[10px] font-black tracking-[0.2em] uppercase text-zinc-500">
-                                <a href="mailto:contact@aeoholic.com" className="hover:text-emerald-400 decoration-emerald-500/20 hover:underline underline-offset-4">contact@aeoholic.com</a>
-                                <button onClick={() => navigate('/privacy')} className="hover:text-emerald-400">Privacy Policy</button>
-                                <button onClick={() => navigate('/terms')} className="hover:text-emerald-400">Terms of Service</button>
-                                <span>© {new Date().getFullYear()} AEOHOLIC</span>
-                            </div>
-                        </div>
-                    </footer>
+                      </div>
+                    </div>
+                  )}
                 </div>
-            } />
-        </Routes>
+              </main>
+
+              <NewProjectModal
+                isOpen={showNewProjectModal}
+                onClose={() => setShowNewProjectModal(false)}
+                initialInfo={modalFormInfo}
+                onInfoChange={setModalFormInfo}
+                onSubmit={async (info) => {
+                  setShowNewProjectModal(false);
+                  const { data, success } = await createProject(session.user.id, info.name);
+                  if (success) {
+                    setCurrentProject(data);
+                    loadProjects(session.user.id);
+                    runAnalysis(info, data.id);
+                  }
+                }}
+                isLoading={state.loading}
+              />
+
+              <SupportModal
+                isOpen={showProjectSettingsModal}
+                onClose={() => setShowProjectSettingsModal(false)}
+                userEmail={session?.user?.email || 'contact@aeoholic.com'}
+                userId={session?.user?.id}
+              />
+
+              {showPlanSelection && (
+                <PlanSelection
+                  userId={session?.user?.id}
+                  onClose={() => setShowPlanSelection(false)}
+                  onSuccess={async () => {
+                    await fetchProfile(session.user.id);
+                    setShowPlanSelection(false);
+                    setShowPaywall(false);
+                  }}
+                />
+              )}
+
+              {showPaywall && (
+                <PaywallOverlay
+                  businessName={businessName}
+                  onAction={() => setShowPlanSelection(true)}
+                  isLoggedIn={!!session}
+                />
+              )}
+            </div>
+          )
+        } />
+        <Route path="*" element={
+          <div className="min-h-screen bg-background flex flex-col text-zinc-100 relative overflow-x-hidden">
+            {/* Background Grid */}
+            <div className="fixed inset-0 z-0 opacity-20 pointer-events-none bg-grid"></div>
+
+            {/* Subtle ambient light */}
+            <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-white opacity-[0.03] blur-[120px] pointer-events-none z-0"></div>
+
+            {/* Navigation */}
+            <nav aria-label="Main navigation" className="border-b border-border bg-background/50 backdrop-blur-md sticky top-0 z-40" itemScope itemType="https://schema.org/Organization">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex justify-between h-16">
+                  <div className="flex items-center gap-3 cursor-pointer" onClick={() => { handleReset(); navigate('/'); }} role="button" aria-label="AEOHOLIC Home">
+                    <span itemProp="name" className="font-display font-bold text-lg tracking-tight text-white">AEOHOLIC</span>
+                  </div>
+                  <div className="hidden md:flex items-center gap-8">
+                    {['features', 'comparison', 'pricing', 'faq'].map((item) => (
+                      <a key={item} href={`#${item}`} onClick={() => navigate('/')} className="text-[10px] font-black text-zinc-500 hover:text-white uppercase tracking-[0.2em] transition-all hover:scale-105 active:scale-95">{item}</a>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-6">
+                    {session ? (
+                      <div className="flex items-center gap-4">
+                        <span className="text-[10px] font-black text-white uppercase tracking-widest cursor-pointer" onClick={() => navigate('/dashboard')}>{session.user.email}</span>
+                        <button onClick={() => supabase.auth.signOut()} className="text-[10px] font-black text-zinc-500 hover:text-rose-400 uppercase tracking-[0.3em] transition-all">Logout</button>
+                      </div>
+                    ) : (
+                      <>
+                        <button onClick={() => setShowAuthModal(true)} className="text-[10px] font-black text-zinc-500 hover:text-white uppercase tracking-[0.3em] transition-all">Log In</button>
+                        <button onClick={() => setShowAuthModal(true)} className="px-6 py-2 bg-white/5 border border-white/10 rounded-full text-[10px] font-black text-white hover:bg-white/10 uppercase tracking-[0.2em] transition-all shadow-xl backdrop-blur-md">Sign Up</button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </nav>
+
+            <main role="main" className="flex-grow py-8 px-4 sm:px-6 lg:px-8 relative z-10">
+              <div className="max-w-7xl mx-auto">
+                {state.error && (
+                  <div className="mb-8 bg-red-950/30 border border-red-900/50 p-4 rounded-lg max-w-2xl mx-auto backdrop-blur-sm animate-fade-in">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                      <p className="text-sm text-red-200 font-mono">ERROR: {state.error}</p>
+                    </div>
+                  </div>
+                )}
+
+                <Routes>
+                  <Route path="/privacy" element={<StaticPage title="Privacy Policy" onBack={() => navigate('/')}><hgroup><h3 className="text-white text-lg font-bold italic tracking-tight uppercase">1. Data Sovereignty</h3></hgroup><p>We believe your audit data should remain yours...</p></StaticPage>} />
+                  <Route path="/terms" element={<StaticPage title="Terms of Service" onBack={() => navigate('/')}><hgroup><h3 className="text-white text-lg font-bold italic tracking-tight uppercase">1. Intent and Usage</h3></hgroup><p>AEOHOLIC is a diagnostic suite for SMEs...</p></StaticPage>} />
+                  <Route path="/" element={
+                    state.loading ? <LoadingScreen /> : !state.result ? (
+                      <div className="flex flex-col items-center justify-center min-h-[60vh] animate-slide-up">
+                        <header className="text-center mb-10 max-w-5xl px-4 mx-auto">
+                          <h1 className="text-3xl sm:text-5xl md:text-6xl font-display font-bold text-white mb-8 sm:mb-12 tracking-[-0.02em] leading-[1.1] py-2 px-6">The Ultimate <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-cyan-400 to-indigo-500 text-shadow-glow">AEO & GEO Diagnostic Tool</span> for Local Search Specialists.</h1>
+                          <h2 className="text-xl md:text-2xl text-zinc-400 max-w-4xl mx-auto leading-relaxed font-medium tracking-tight opacity-90 px-4 mb-12">
+                            Help your clients dominate <span className="text-white font-bold">Siri, ChatGPT and Gemini</span> with 9-agent workflows, daily prompt tracking and daily vocal simulations.
+                          </h2>
+                        </header>
+                        <section aria-label="Business Selection Form" className="relative">
+                          <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-full text-center">
+                            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.4em] animate-pulse">Run Your First Client Audit Free</span>
+                          </div>                                                <BusinessForm
+                            onSubmit={(info) => {
+                              if (session) {
+                                if (currentProject?.id) {
+                                  runAnalysis(info, currentProject.id);
+                                  navigate('/dashboard');
+                                } else {
+                                  setState({ loading: false, error: "Please select a project before starting an audit.", result: null });
+                                }
+                              } else {
+                                runGuestAnalysis(info);
+                              }
+                            }}
+                            onDemo={handleDemoRequest}
+                            isLoading={state.loading}
+                            initialInfo={formInfo}
+                            onInfoChange={setFormInfo}
+                          />
+                        </section>
+                        <div className="w-full mt-4 pt-8 border-t border-border/10"><FeaturesSection /></div>
+                        <div className="w-full"><ComparisonSection /></div>
+                        <div className="w-full"><PricingSection onSelectPlan={() => session ? setShowPlanSelection(true) : setShowAuthModal(true)} /></div>
+                        <div className="w-full"><FAQSection /></div>
+                      </div>
+                    ) : (session && businessName !== "Blue Bottle Coffee (DEMO)") ? (
+                      <Navigate to="/dashboard" replace />
+                    ) : (
+                      <ErrorBoundary>
+                        <div className="relative">
+                          <div className={`${showPaywall ? 'blur-xl select-none pointer-events-none' : ''} transition-all duration-1000`}>
+                            <Dashboard data={state.result} businessName={businessName} onReset={handleReset} geminiApiKey={geminiKey} />
+                          </div>
+                          {showPaywall && (
+                            <PaywallOverlay
+                              businessName={businessName}
+                              onAction={() => session ? setShowPlanSelection(true) : setShowAuthModal(true)}
+                              isLoggedIn={!!session}
+                            />
+                          )}
+                        </div>
+                      </ErrorBoundary>
+                    )
+                  } />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </div>
+            </main>
+
+            <AuthModal
+              isOpen={showAuthModal}
+              onClose={() => { setShowAuthModal(false); setPendingCheckoutUrl(null); }}
+              onSuccess={async () => {
+                setShowAuthModal(false);
+
+                // Check if new user & clicked a pricing table plan
+                if (pendingCheckoutUrl) {
+                  const { data: { session: newSession } } = await supabase.auth.getSession();
+                  if (newSession && newSession.user) {
+                    const signupTime = new Date(newSession.user.created_at).getTime();
+                    const now = Date.now();
+                    if (now - signupTime < 6000) { // New user (<6s old)
+                      const url = new URL(pendingCheckoutUrl);
+                      url.searchParams.set('checkout[custom][user_id]', newSession.user.id);
+                      const win = window as any;
+                      if (win.LemonSqueezy) {
+                        win.LemonSqueezy.Url.Open(url.toString());
+                      } else {
+                        window.location.href = url.toString();
+                      }
+                      setPendingCheckoutUrl(null);
+                      return;
+                    }
+                  }
+                  setPendingCheckoutUrl(null);
+                }
+                navigate('/dashboard');
+              }}
+            />
+
+            {showPlanSelection && (
+              <PlanSelection
+                userId={session?.user?.id}
+                onClose={() => setShowPlanSelection(false)}
+                onSuccess={async () => { await fetchProfile(session.user.id); setShowPlanSelection(false); setShowPaywall(false); }}
+              />
+            )}
+
+            <footer aria-label="Site footer" className="border-t border-border mt-auto relative z-10 bg-background py-12">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-8">
+                <span className="font-display font-black text-2xl tracking-tighter text-emerald-500">AEOHOLIC<span className="text-white">.com</span></span>
+                <div className="flex flex-wrap justify-center gap-10 text-[10px] font-black tracking-[0.2em] uppercase text-zinc-500">
+                  <a href="mailto:contact@aeoholic.com" className="hover:text-emerald-400 decoration-emerald-500/20 hover:underline underline-offset-4">contact@aeoholic.com</a>
+                  <button onClick={() => navigate('/privacy')} className="hover:text-emerald-400">Privacy Policy</button>
+                  <button onClick={() => navigate('/terms')} className="hover:text-emerald-400">Terms of Service</button>
+                  <span>© {new Date().getFullYear()} AEOHOLIC</span>
+                </div>
+              </div>
+            </footer>
+          </div>
+        } />
+      </Routes>
     </div>
   );
 };

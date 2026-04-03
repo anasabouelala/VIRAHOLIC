@@ -147,7 +147,7 @@ const BusinessForm: React.FC<Props> = ({ onSubmit, onDemo, isLoading, hideDemo, 
                   ACCESS SAVED AUDIT
                 </span>
               ) : (
-                'RUN YOUR AUDIT'
+                'Generate Client Diagnostic Report'
               )}
             </button>
             {!hideDemo && onDemo && !isLocked && (
