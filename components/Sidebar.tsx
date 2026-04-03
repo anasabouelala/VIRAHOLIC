@@ -96,96 +96,98 @@ const Sidebar: React.FC<SidebarProps> = ({
             </div>
 
             {/* Project Context */}
-            <div className="p-6 bg-zinc-900/20 flex-grow">
-                <div className="flex justify-between items-center mb-4">
-                    <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Active Project</span>
-                    <button 
-                        onClick={onAddProject}
-                        className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/20 transition-all"
-                        title="Add New Project"
-                    >
-                        <PlusIcon className="w-3.5 h-3.5" />
-                    </button>
-                </div>
-                <div className="p-3 bg-zinc-900/50 border border-zinc-800 rounded-xl group hover:border-emerald-500/30 transition-all flex items-center justify-between mb-8">
-                    <div className="flex-grow min-w-0">
-                        {isEditing ? (
-                            <form 
-                                onSubmit={(e) => { e.preventDefault(); handleRename(); }}
-                                className="w-full"
+            <div className="p-6 bg-zinc-900/20 flex-grow flex flex-col">
+                <div className={`transition-all duration-500 flex-grow ${(!planName || planName === 'Free Plan' || planName === 'None') ? 'opacity-30 pointer-events-none blur-[2px] select-none grayscale' : ''}`}>
+                    <div className="flex justify-between items-center mb-4">
+                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Active Project</span>
+                        <button 
+                            onClick={onAddProject}
+                            className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/20 transition-all"
+                            title="Add New Project"
+                        >
+                            <PlusIcon className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+                    <div className="p-3 bg-zinc-900/50 border border-zinc-800 rounded-xl group hover:border-emerald-500/30 transition-all flex items-center justify-between mb-8">
+                        <div className="flex-grow min-w-0">
+                            {isEditing ? (
+                                <form 
+                                    onSubmit={(e) => { e.preventDefault(); handleRename(); }}
+                                    className="w-full"
+                                >
+                                    <input
+                                        autoFocus
+                                        value={editValue}
+                                        onChange={(e) => setEditValue(e.target.value)}
+                                        onBlur={handleRename}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Escape') {
+                                                setEditValue(projectName);
+                                                setIsEditing(false);
+                                            }
+                                        }}
+                                        className="w-full bg-zinc-900/50 text-sm font-bold text-white border-b border-emerald-500/50 focus:outline-none focus:border-emerald-400 py-0.5"
+                                    />
+                                </form>
+                            ) : (
+                                <>
+                                    <p className="text-sm font-bold text-white truncate cursor-pointer" onClick={() => setIsEditing(true)}>{projectName}</p>
+                                    <p className="text-[10px] text-zinc-500 font-medium truncate mt-1">Diagnostic Mode: Active</p>
+                                </>
+                            )}
+                        </div>
+                        {!isEditing && (
+                            <button 
+                                onClick={() => setIsEditing(true)}
+                                className="p-1 hover:bg-zinc-800 rounded-lg transition-colors group/pen"
                             >
-                                <input
-                                    autoFocus
-                                    value={editValue}
-                                    onChange={(e) => setEditValue(e.target.value)}
-                                    onBlur={handleRename}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Escape') {
-                                            setEditValue(projectName);
-                                            setIsEditing(false);
-                                        }
-                                    }}
-                                    className="w-full bg-zinc-900/50 text-sm font-bold text-white border-b border-emerald-500/50 focus:outline-none focus:border-emerald-400 py-0.5"
-                                />
-                            </form>
-                        ) : (
-                            <>
-                                <p className="text-sm font-bold text-white truncate cursor-pointer" onClick={() => setIsEditing(true)}>{projectName}</p>
-                                <p className="text-[10px] text-zinc-500 font-medium truncate mt-1">Diagnostic Mode: Active</p>
-                            </>
+                                <PenToolIcon className="w-3.5 h-3.5 text-zinc-600 group-hover:text-emerald-500 group-hover/pen:text-emerald-400 transition-colors ml-2 flex-shrink-0" />
+                            </button>
                         )}
                     </div>
-                    {!isEditing && (
-                        <button 
-                            onClick={() => setIsEditing(true)}
-                            className="p-1 hover:bg-zinc-800 rounded-lg transition-colors group/pen"
-                        >
-                            <PenToolIcon className="w-3.5 h-3.5 text-zinc-600 group-hover:text-emerald-500 group-hover/pen:text-emerald-400 transition-colors ml-2 flex-shrink-0" />
-                        </button>
-                    )}
-                </div>
 
-                {/* Project List */}
-                <div className="mb-8 space-y-2">
-                    <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest block mb-3">All Projects</span>
-                    <div className="space-y-1.5 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
-                        {projects.map((proj) => {
-                            const hasAudit = auditProjectIds.includes(proj.id);
-                            return (
-                                <div key={proj.id} className="relative group w-full flex items-center gap-1">
-                                    <button
-                                        onClick={() => onSelectProject(proj)}
-                                        className={`flex-grow flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all text-left group/btn relative
-                                            ${currentProjectId === proj.id 
-                                                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.05)]' 
-                                                : 'bg-zinc-900/30 border-zinc-800/50 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
-                                            }`}
-                                    >
-                                        <div className={`w-1.5 h-1.5 rounded-full transition-colors flex-shrink-0
-                                            ${currentProjectId === proj.id ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-800 group-hover/btn:bg-zinc-600'}
-                                        `}></div>
-                                        <span className="text-[11px] font-bold truncate flex-grow">{proj.name}</span>
-                                        {hasAudit && (
-                                            <div className="flex items-center gap-1.5 ml-auto">
-                                                <div className="w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-                                                <span className="text-[8px] font-black text-emerald-500/60 uppercase tracking-tighter">Saved</span>
-                                            </div>
-                                        )}
-                                    </button>
-                                    <button
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            setProjectToDelete(proj);
-                                        }}
-                                        className="p-2 rounded-lg transition-all flex-shrink-0 text-zinc-600 hover:text-rose-500 hover:bg-rose-500/10"
-                                        title="Delete Project"
-                                    >
-                                        <TrashIcon className="w-4 h-4" />
-                                    </button>
-                                </div>
-                            );
-                        })}
+                    {/* Project List */}
+                    <div className="mb-8 space-y-2">
+                        <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest block mb-3">All Projects</span>
+                        <div className="space-y-1.5 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                            {projects.map((proj) => {
+                                const hasAudit = auditProjectIds.includes(proj.id);
+                                return (
+                                    <div key={proj.id} className="relative group w-full flex items-center gap-1">
+                                        <button
+                                            onClick={() => onSelectProject(proj)}
+                                            className={`flex-grow flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all text-left group/btn relative
+                                                ${currentProjectId === proj.id 
+                                                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.05)]' 
+                                                    : 'bg-zinc-900/30 border-zinc-800/50 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300'
+                                                }`}
+                                        >
+                                            <div className={`w-1.5 h-1.5 rounded-full transition-colors flex-shrink-0
+                                                ${currentProjectId === proj.id ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-800 group-hover/btn:bg-zinc-600'}
+                                            `}></div>
+                                            <span className="text-[11px] font-bold truncate flex-grow">{proj.name}</span>
+                                            {hasAudit && (
+                                                <div className="flex items-center gap-1.5 ml-auto">
+                                                    <div className="w-1 h-1 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                                                    <span className="text-[8px] font-black text-emerald-500/60 uppercase tracking-tighter">Saved</span>
+                                                </div>
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                setProjectToDelete(proj);
+                                            }}
+                                            className="p-2 rounded-lg transition-all flex-shrink-0 text-zinc-600 hover:text-rose-500 hover:bg-rose-500/10"
+                                            title="Delete Project"
+                                        >
+                                            <TrashIcon className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
 

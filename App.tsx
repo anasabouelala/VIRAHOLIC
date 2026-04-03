@@ -40,6 +40,7 @@ const App: React.FC = () => {
   const [session, setSession] = useState<any>(null);
   const [showPaywall, setShowPaywall] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [pendingCheckoutUrl, setPendingCheckoutUrl] = useState<string | null>(null);
   const [showPlanSelection, setShowPlanSelection] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
   const [projects, setProjects] = useState<any[]>([]);
@@ -250,18 +251,28 @@ const App: React.FC = () => {
     if (storedGeminiKey) setGeminiKey(storedGeminiKey);
   }, []);
 
-  // Teaser Logic: Trigger paywall after 3 seconds if not subscribed (Exclude Demo)
+  // Teaser Logic: 6 Seconds for Guests -> Blur + Auth
   useEffect(() => {
     const isDemo = businessName?.includes('(DEMO)');
-    if (state.result && !state.loading && !isDemo && (!session || !userProfile?.geo_score)) {
-      const timer = setTimeout(() => {
-        if (!session || !userProfile?.geo_score) {
-          setShowPaywall(true);
-        }
-      }, 3000);
-      return () => clearTimeout(timer);
+    if (state.result && !state.loading && !isDemo) {
+      if (!session) {
+        // Guest Teaser Flow: 6 Seconds then Blur and show Auth
+        const timer = setTimeout(() => {
+           setShowPaywall(true); // Triggers Blur
+           setShowAuthModal(true); // Forces Login
+        }, 6000);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [state.result, state.loading, session, userProfile, businessName]);
+  }, [state.result, state.loading, session, businessName]);
+
+  // Dashboard Auto-Pricing Pop-up (Every time if no plan)
+  useEffect(() => {
+     if (session && location.pathname === '/dashboard' && userProfile && !userProfile.geo_score) {
+         setShowPaywall(true);
+         setShowPlanSelection(true);
+     }
+  }, [session, location.pathname, userProfile]);
 
   const saveSettings = () => {
     localStorage.setItem('localpulse_gemini_key', geminiKey);
@@ -322,9 +333,17 @@ const App: React.FC = () => {
     }
   };
 
-  const handleAnalysisRequest = async (info: BusinessInfo) => {
-    // Auth check disabled
-    runAnalysis(info);
+  const runGuestAnalysis = async (info: BusinessInfo) => {
+    try {
+      setState({ loading: true, error: null, result: null });
+      setBusinessName(info.name);
+      
+      const result = await analyzeBusinessVisibility(info, geminiKey || undefined);
+      setState({ loading: false, error: null, result });
+      
+    } catch (err: any) {
+      setState({ loading: false, error: err.message, result: null });
+    }
   };
 
   const handleDemoRequest = () => {
@@ -662,11 +681,15 @@ const App: React.FC = () => {
                                             <section aria-label="Business Selection Form">
                                                 <BusinessForm 
                                                     onSubmit={(info) => {
-                                                        if (currentProject?.id) {
-                                                            runAnalysis(info, currentProject.id);
-                                                            navigate('/dashboard');
+                                                        if (session) {
+                                                            if (currentProject?.id) {
+                                                                runAnalysis(info, currentProject.id);
+                                                                navigate('/dashboard');
+                                                            } else {
+                                                                setState({ loading: false, error: "Please select a project before starting an audit.", result: null });
+                                                            }
                                                         } else {
-                                                            setState({ loading: false, error: "Please select a project before starting an audit.", result: null });
+                                                            runGuestAnalysis(info);
                                                         }
                                                     }} 
                                                     onDemo={handleDemoRequest} 
@@ -704,7 +727,36 @@ const App: React.FC = () => {
                         </div>
                     </main>
 
-                    <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} onSuccess={() => { setShowAuthModal(false); if (userProfile?.geo_score) setShowPaywall(false); navigate('/dashboard'); }} />
+                    <AuthModal 
+                        isOpen={showAuthModal} 
+                        onClose={() => { setShowAuthModal(false); setPendingCheckoutUrl(null); }} 
+                        onSuccess={async () => { 
+                            setShowAuthModal(false); 
+                            
+                            // Check if new user & clicked a pricing table plan
+                            if (pendingCheckoutUrl) {
+                                const { data: { session: newSession } } = await supabase.auth.getSession();
+                                if (newSession && newSession.user) {
+                                    const signupTime = new Date(newSession.user.created_at).getTime();
+                                    const now = Date.now();
+                                    if (now - signupTime < 6000) { // New user (<6s old)
+                                        const url = new URL(pendingCheckoutUrl);
+                                        url.searchParams.set('checkout[custom][user_id]', newSession.user.id);
+                                        const win = window as any;
+                                        if (win.LemonSqueezy) {
+                                            win.LemonSqueezy.Url.Open(url.toString());
+                                        } else {
+                                            window.location.href = url.toString();
+                                        }
+                                        setPendingCheckoutUrl(null);
+                                        return;
+                                    }
+                                }
+                                setPendingCheckoutUrl(null);
+                            }
+                            navigate('/dashboard'); 
+                        }} 
+                    />
                     
                     {showPlanSelection && (
                         <PlanSelection 
