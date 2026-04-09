@@ -105,7 +105,7 @@ const BusinessForm: React.FC<Props> = ({ onSubmit, onDemo, isLoading, hideDemo, 
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider ml-1">Search Language (Vital for AEO)</label>
               <div className="relative">
-                <select 
+                <select
                   className="w-full bg-zinc-900/50 border border-zinc-800 rounded-lg pl-10 pr-4 py-3 text-white focus:outline-none focus:ring-1 focus:ring-white focus:border-white transition-all font-medium appearance-none"
                   value={info.language}
                   onChange={(e) => setInfo(prev => ({ ...prev, language: e.target.value }))}
@@ -131,7 +131,7 @@ const BusinessForm: React.FC<Props> = ({ onSubmit, onDemo, isLoading, hideDemo, 
               className={`flex-[2] py-4 px-6 rounded-lg font-bold text-xs tracking-[0.2em] uppercase transition-all active:scale-95
                 ${isLoading
                   ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700'
-                  : isLocked 
+                  : isLocked
                     ? 'bg-emerald-500 text-white hover:bg-emerald-400 border border-emerald-400/20 shadow-[0_0_30px_rgba(16,185,129,0.3)] scale-[1.02]'
                     : 'bg-emerald-500 text-white hover:bg-emerald-400 border border-emerald-400/20 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
                 }`}
