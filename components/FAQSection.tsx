@@ -85,7 +85,7 @@ const FAQSection: React.FC = () => {
                                         <div className="relative group">
                                             <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-indigo-600 rounded-full blur opacity-40 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
                                             <img 
-                                                src="/public/anas.jpg" 
+                                                src="/anas.jpg" 
                                                 alt="Anas - Founder" 
                                                 className="relative w-20 h-20 rounded-full object-cover border-2 border-white/10 shadow-lg grayscale hover:grayscale-0 transition-all duration-500"
                                             />
