@@ -1,16 +1,43 @@
 import React from 'react';
-import { SparklesIcon, AlertCircleIcon } from './Icons';
+import { SparklesIcon } from './Icons';
+import { useNavigate } from 'react-router-dom';
 
 interface PaywallOverlayProps {
     businessName: string;
     onAction: () => void;
     isLoggedIn?: boolean;
+    onClose?: () => void;
 }
 
-const PaywallOverlay: React.FC<PaywallOverlayProps> = ({ businessName, onAction, isLoggedIn }) => {
+const PaywallOverlay: React.FC<PaywallOverlayProps> = ({ businessName, onAction, isLoggedIn, onClose }) => {
+    const navigate = useNavigate();
+
+    const handleGoHome = () => {
+        if (onClose) onClose();
+        navigate('/');
+    };
+
     return (
         <div className="fixed inset-0 z-[55] overflow-y-auto animate-fade-in pointer-events-auto">
-            <div className="min-h-full flex items-center justify-center p-4">
+            {/* Top escape bar — always visible */}
+            <div className="sticky top-0 z-[60] flex items-center justify-between px-4 py-3 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-900">
+                <button
+                    onClick={handleGoHome}
+                    className="flex items-center gap-2 text-[10px] font-black text-zinc-400 hover:text-white uppercase tracking-widest transition-colors"
+                >
+                    <span>←</span> Home
+                </button>
+                {onClose && (
+                    <button
+                        onClick={onClose}
+                        className="text-[10px] font-black text-zinc-600 hover:text-zinc-300 uppercase tracking-widest transition-colors"
+                    >
+                        ✕ Dismiss
+                    </button>
+                )}
+            </div>
+
+            <div className="min-h-[calc(100%-52px)] flex items-center justify-center p-4">
                 <div className="bg-zinc-950/95 backdrop-blur-md border border-zinc-800 rounded-2xl p-6 sm:p-8 max-w-lg w-full shadow-[0_0_50px_rgba(0,0,0,0.5)] text-center relative overflow-hidden">
                 {/* Glow Effect */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-emerald-500/10 blur-[100px] pointer-events-none"></div>
@@ -43,6 +70,12 @@ const PaywallOverlay: React.FC<PaywallOverlayProps> = ({ businessName, onAction,
                                 Sign In to Access Existing Project
                             </button>
                         )}
+                        <button
+                            onClick={handleGoHome}
+                            className="text-[10px] font-black text-zinc-700 hover:text-zinc-500 uppercase tracking-widest transition-colors py-1"
+                        >
+                            ← Back to Homepage
+                        </button>
                     </div>
                 </div>
             </div>

@@ -45,6 +45,7 @@ interface MobileDashboardProps {
     onIncrementSimulation: () => void;
     auditCache: Record<string, any>;
     setState: (state: any) => void;
+    onClosePaywall?: () => void;
 }
 
 const MobileDashboard: React.FC<MobileDashboardProps> = ({
@@ -55,7 +56,7 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
     onLogout, onSelectProject, onClosePlanSelection, onPlanSuccess,
     onCloseNewProject, onSubmitNewProject, onCloseSettings, onFormInfoChange,
     onModalFormInfoChange, onReset, onRunAnalysis, onDemo, onIncrementSimulation,
-    auditCache, setState,
+    auditCache, setState, onClosePaywall,
 }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -254,6 +255,7 @@ const MobileDashboard: React.FC<MobileDashboardProps> = ({
                     businessName={businessName}
                     onAction={onUpgrade}
                     isLoggedIn={!!session}
+                    onClose={onClosePaywall}
                 />
             )}
         </div>

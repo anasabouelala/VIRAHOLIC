@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckIcon, SparklesIcon } from './Icons';
 import { supabase } from '../services/supabase';
+import { useNavigate } from 'react-router-dom';
 
 interface PlanSelectionProps {
     userId: string;
@@ -9,6 +10,12 @@ interface PlanSelectionProps {
 }
 
 const PlanSelection: React.FC<PlanSelectionProps> = ({ userId, onSuccess, onClose }) => {
+    const navigate = useNavigate();
+
+    const handleGoHome = () => {
+        if (onClose) onClose();
+        navigate('/');
+    };
     // We will inject the actual Lemon Squeezy URLs here
     const plans = [
         {
@@ -86,9 +93,12 @@ const PlanSelection: React.FC<PlanSelectionProps> = ({ userId, onSuccess, onClos
             return;
         }
 
-        // Add custom user_id so edge function knows who to upgrade securely
+        // Build the checkout URL, inject user_id, strip any test mode params
         const url = new URL(plan.checkoutUrl);
         url.searchParams.set('checkout[custom][user_id]', userId);
+        // Remove any leftover test/debug parameters that force test mode
+        url.searchParams.delete('test');
+        url.searchParams.delete('preview');
         
         // Launch the beautiful inline overlay instead of a hard redirect
         const win = window as any;
@@ -102,17 +112,23 @@ const PlanSelection: React.FC<PlanSelectionProps> = ({ userId, onSuccess, onClos
 
     return (
         <div className="fixed inset-0 z-[70] overflow-y-auto bg-zinc-950/90 backdrop-blur-xl animate-fade-in">
-            {/* Sticky close button for all screen sizes */}
-            {onClose && (
-                <div className="sticky top-0 z-[80] flex justify-end p-4 pointer-events-none">
+            {/* Sticky top bar with Home + close buttons — always accessible */}
+            <div className="sticky top-0 z-[80] flex items-center justify-between px-4 py-3 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-900 pointer-events-auto">
+                <button
+                    onClick={handleGoHome}
+                    className="flex items-center gap-2 text-[10px] font-black text-zinc-400 hover:text-white uppercase tracking-widest transition-colors"
+                >
+                    <span>←</span> Home
+                </button>
+                {onClose && (
                     <button 
                         onClick={onClose}
-                        className="pointer-events-auto px-4 py-2 sm:px-6 rounded-full bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all"
+                        className="pointer-events-auto px-4 py-1.5 sm:px-5 rounded-full bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all"
                     >
                         ← Dashboard
                     </button>
-                </div>
-            )}
+                )}
+            </div>
             <div className="min-h-full flex items-start justify-center p-4 pb-12">
                 <div className="max-w-5xl w-full">
                     <div className="text-center mb-8 sm:mb-12 pt-2 sm:pt-6">

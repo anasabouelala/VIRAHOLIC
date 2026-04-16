@@ -519,6 +519,7 @@ const App: React.FC = () => {
               }}
               auditCache={auditCache}
               setState={setState}
+              onClosePaywall={() => setShowPaywall(false)}
             />
           )
         } />
