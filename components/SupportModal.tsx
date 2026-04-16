@@ -54,10 +54,24 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose, userEmail,
 
     return (
         <div 
-            className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in"
+            className="fixed inset-0 z-[70] flex items-start justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in overflow-y-auto"
             onClick={onClose}
         >
-            <div className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-zinc-950 border border-zinc-800 rounded-3xl w-full max-w-lg shadow-2xl relative my-8" onClick={(e) => e.stopPropagation()}>
+                <div className="sticky top-0 z-20 flex items-center justify-between px-6 py-3 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800">
+                    <button
+                        onClick={() => window.location.href = '/'}
+                        className="text-[10px] font-black text-zinc-500 hover:text-white uppercase tracking-widest transition-colors"
+                    >
+                        ← Home
+                    </button>
+                    <button 
+                        onClick={onClose}
+                        className="text-[10px] font-black text-zinc-600 hover:text-white uppercase tracking-widest"
+                    >
+                        ✕ Close
+                    </button>
+                </div>
                 <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-violet-500"></div>
                 
                 <div className="p-8 sm:p-10">
@@ -71,12 +85,6 @@ const SupportModal: React.FC<SupportModalProps> = ({ isOpen, onClose, userEmail,
                                 Direct VIP Assistance
                             </p>
                         </div>
-                        <button 
-                            onClick={onClose}
-                            className="p-2 rounded-xl hover:bg-zinc-900 text-zinc-500 hover:text-white transition-all transform hover:rotate-90"
-                        >
-                            <XIcon className="w-6 h-6" />
-                        </button>
                     </div>
 
                     {success ? (

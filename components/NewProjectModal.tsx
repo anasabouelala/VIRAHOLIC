@@ -17,11 +17,17 @@ const NewProjectModal: React.FC<NewProjectModalProps> = ({ isOpen, onClose, onSu
 
     return (
         <div 
-            className="fixed inset-0 z-[75] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in overflow-y-auto"
+            className="fixed inset-0 z-[75] flex items-start justify-center p-4 bg-black/90 backdrop-blur-md animate-fade-in overflow-y-auto"
             onClick={onClose}
         >
-            <div className="w-full max-w-2xl relative" onClick={(e) => e.stopPropagation()}>
+            <div className="w-full max-w-2xl relative my-12" onClick={(e) => e.stopPropagation()}>
                 <div className="absolute -top-12 right-0 flex items-center gap-4">
+                    <button
+                        onClick={() => window.location.href = '/'}
+                        className="text-[10px] font-black text-zinc-500 hover:text-white uppercase tracking-widest transition-colors mr-2"
+                    >
+                        ← Home
+                    </button>
                     <div className="flex flex-col items-end">
                         <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em]">New Mission</span>
                         <span className="text-xs text-zinc-500">Initialize Agent Discovery</span>
