@@ -1657,21 +1657,21 @@ const Dashboard: React.FC<Props> = ({ data, businessName, onReset, geminiApiKey,
     );
 
     return (
-        <div className="space-y-8 pb-12" ref={dashboardRef}>
+        <div className="space-y-4 sm:space-y-8 pb-12" ref={dashboardRef}>
             {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 pt-4">
-                <div>
-                    <h2 className="text-3xl font-bold text-white tracking-tight">{businessName}</h2>
-                    <div className="flex items-center gap-2 mt-2">
-                        <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_#10b981]"></span>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-6 pt-4">
+                <div className="flex-grow min-w-0">
+                    <h2 className="text-xl sm:text-3xl font-bold text-white tracking-tight truncate">{businessName}</h2>
+                    <div className="flex items-center gap-2 mt-1 sm:mt-2">
+                        <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_#10b981] flex-shrink-0"></span>
                         <p className="text-zinc-500 text-xs font-mono uppercase tracking-wide">Analysis Complete</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-shrink-0">
                     <button
                         onClick={onReset}
                         data-html2canvas-ignore="true"
-                        className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold tracking-wide text-zinc-900 bg-white rounded hover:bg-zinc-200 transition-colors shadow-[0_0_15px_rgba(255,255,255,0.1)]"
+                        className="flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 text-xs font-bold tracking-wide text-zinc-900 bg-white rounded hover:bg-zinc-200 transition-colors shadow-[0_0_15px_rgba(255,255,255,0.1)]"
                     >
                         <RefreshCwIcon className="w-3 h-3" />
                         NEW AUDIT
@@ -1681,13 +1681,13 @@ const Dashboard: React.FC<Props> = ({ data, businessName, onReset, geminiApiKey,
 
             {/* Tabs */}
             <div className="border-b border-zinc-800">
-                <nav className="-mb-px flex space-x-8 overflow-x-auto" aria-label="Tabs">
+                <nav className="-mb-px flex overflow-x-auto pb-px" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }} aria-label="Tabs">
                     {[
                         { id: 'overview', label: 'Overview' },
-                        { id: 'studio', label: 'Creator Studio', icon: <PenToolIcon className="w-4 h-4 text-indigo-400" /> },
-                        { id: 'missions', label: 'Action Plan', icon: <TargetIcon className="w-4 h-4 text-emerald-500" /> },
-                        { id: 'visual', label: 'Visual', icon: <SparklesIcon className="w-4 h-4 text-emerald-500" /> },
-                        { id: 'voice', label: 'Voice', icon: <MicIcon className="w-4 h-4 text-violet-400" /> },
+                        { id: 'studio', label: 'Studio', icon: <PenToolIcon className="w-3.5 h-3.5 text-indigo-400" /> },
+                        { id: 'missions', label: 'Actions', icon: <TargetIcon className="w-3.5 h-3.5 text-emerald-500" /> },
+                        { id: 'visual', label: 'Visual', icon: <SparklesIcon className="w-3.5 h-3.5 text-emerald-500" /> },
+                        { id: 'voice', label: 'Voice', icon: <MicIcon className="w-3.5 h-3.5 text-violet-400" /> },
                         { id: 'deepdive', label: 'Deep Dive' },
                         { id: 'llms', label: 'Models' },
                         { id: 'map', label: 'Map' },
@@ -1699,20 +1699,20 @@ const Dashboard: React.FC<Props> = ({ data, businessName, onReset, geminiApiKey,
                             className={`${activeTab === tab.id
                                 ? 'border-indigo-500 text-white'
                                 : 'border-transparent text-zinc-500 hover:text-zinc-300 hover:border-zinc-700'
-                                } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors uppercase tracking-wider flex items-center gap-2`}
+                                } whitespace-nowrap py-3 px-3 sm:py-4 sm:px-1 sm:mr-6 border-b-2 font-medium text-xs sm:text-sm transition-colors uppercase tracking-wide flex items-center gap-1.5 flex-shrink-0`}
                         >
                              {tab.icon}
                             {tab.label}
-                            {tab.id === 'studio' && <span className="text-[9px] bg-indigo-500 text-white px-1 rounded ml-1">NEW</span>}
-                            {tab.id === 'visual' && <span className="text-[9px] bg-emerald-500 text-white px-1 rounded ml-1">NEW</span>}
-                            {tab.id === 'voice' && <span className="text-[9px] bg-violet-500 text-white px-1 rounded ml-1">NEW</span>}
+                            {tab.id === 'studio' && <span className="text-[9px] bg-indigo-500 text-white px-1 rounded ml-0.5 hidden sm:inline">NEW</span>}
+                            {tab.id === 'visual' && <span className="text-[9px] bg-emerald-500 text-white px-1 rounded ml-0.5 hidden sm:inline">NEW</span>}
+                            {tab.id === 'voice' && <span className="text-[9px] bg-violet-500 text-white px-1 rounded ml-0.5 hidden sm:inline">NEW</span>}
                         </button>
                     ))}
                 </nav>
             </div>
 
             {/* Content Area */}
-            <div className="mt-8 min-h-[500px]">
+            <div className="mt-4 sm:mt-8 min-h-[500px]">
                 {activeTab === 'overview' && renderOverview()}
                 {activeTab === 'studio' && renderStudio()}
                 {activeTab === 'missions' && renderMissions()}

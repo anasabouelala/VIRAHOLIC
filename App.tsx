@@ -21,6 +21,7 @@ import StaticPage from './components/StaticPage';
 import Sidebar from './components/Sidebar';
 import SupportModal from './components/SupportModal';
 import NewProjectModal from './components/NewProjectModal';
+import MobileDashboard from './components/MobileDashboard';
 
 import { Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
 
@@ -458,166 +459,67 @@ const App: React.FC = () => {
       <Routes>
         <Route path="/dashboard" element={
           !session ? <Navigate to="/" replace /> : (
-            <div className="flex bg-background min-h-screen text-zinc-100 relative w-full">
-              <div className="fixed inset-0 z-0 opacity-20 pointer-events-none bg-grid"></div>
-
-              <Sidebar
-                projectName={currentProject?.name || 'My Project'}
-                brandName={currentProject?.brand_name}
-                userEmail={session?.user?.email}
-                planName={userProfile?.plan_name}
-                auditsUsed={userProfile?.audits_consumed || 0}
-                promptsUsed={userProfile?.simulations_consumed || 0}
-                onAddProject={() => setShowNewProjectModal(true)}
-                onSettings={() => setShowProjectSettingsModal(true)}
-                onUpgrade={() => setShowPlanSelection(true)}
-                onRenameProject={handleRenameProject}
-                onDeleteProject={handleDeleteProject}
-                onLogout={async () => {
-                  await supabase.auth.signOut();
-                  localStorage.removeItem('aeoholic_last_project_id');
-                  navigate('/', { replace: true });
-                }}
-                projects={projects}
-                onSelectProject={(proj) => {
-                  setCurrentProject(proj);
-                  if (proj?.id) localStorage.setItem('aeoholic_last_project_id', proj.id);
-                }}
-                currentProjectId={currentProject?.id}
-                auditProjectIds={auditProjectIds}
-              />
-
-              <main className="flex-grow p-8 overflow-y-auto relative z-10 h-screen">
-                <div className="max-w-7xl mx-auto pb-20">
-                  {state.loading ? (
-                    <LoadingScreen />
-                  ) : state.result ? (
-                    <ErrorBoundary>
-                      <div className="relative">
-                        <div className={`${showPaywall ? 'blur-xl select-none pointer-events-none' : ''} transition-all duration-1000`}>
-                          <Dashboard
-                            data={state.result}
-                            businessName={businessName}
-                            onReset={handleReset}
-                            geminiApiKey={geminiKey}
-                            onIncrementSimulation={async () => {
-                              if (session?.user?.id) {
-                                await incrementSimulationUsage(session.user.id);
-                                const usage = await getUserUsage(session.user.id);
-                                setUserProfile(prev => ({ ...prev, simulations_consumed: usage.simulations_used }));
-                              }
-                            }}
-                          />
-                        </div>
-                      </div>
-                    </ErrorBoundary>
-                  ) : !currentProject && projects.length === 0 ? (
-                    <div className="text-center py-20 px-4 animate-fade-in">
-                      <div className="w-24 h-24 bg-emerald-500/10 border border-emerald-500/20 rounded-[2rem] flex items-center justify-center mx-auto mb-10 shadow-[0_0_50px_rgba(16,185,129,0.15)] group hover:scale-105 transition-all duration-500">
-                        <SparklesIcon className="w-12 h-12 text-emerald-500 group-hover:rotate-12 transition-transform" />
-                      </div>
-                      <h2 className="text-5xl font-display font-bold text-white mb-6 tracking-tight">Ready for your <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">first deep-agent audit?</span></h2>
-                      <p className="text-zinc-400 max-w-xl mx-auto text-xl mb-12 leading-relaxed">Your project suite is currently empty. Create your first diagnostic environment to start mapping AI visibility for any local business.</p>
-
-                      <button
-                        onClick={() => setShowNewProjectModal(true)}
-                        className="px-10 py-5 bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs uppercase tracking-[0.3em] rounded-2xl transition-all shadow-[0_0_40px_rgba(16,185,129,0.3)] hover:shadow-[0_0_60px_rgba(16,185,129,0.5)] hover:-translate-y-1 active:scale-95"
-                      >
-                        Create Your First Project
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center min-h-[80vh] animate-slide-up">
-                      {state.error && (
-                        <div className="w-full max-w-2xl bg-rose-500/10 border border-rose-500/20 rounded-2xl p-6 mb-8 text-center animate-fade-in shadow-[0_0_20px_rgba(244,63,94,0.1)]">
-                          <div className="flex items-center justify-center gap-3 mb-2">
-                            <AlertCircleIcon className="w-5 h-5 text-rose-500" />
-                            <h3 className="text-rose-500 font-bold uppercase tracking-widest text-sm">Audit System Error</h3>
-                          </div>
-                          <p className="text-zinc-400 text-sm font-medium">{state.error}</p>
-                        </div>
-                      )}
-                      <div className="text-center mb-12">
-                        <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500/20 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-[0_0_50px_rgba(16,185,129,0.1)]">
-                          <SparklesIcon className="w-10 h-10 text-emerald-500" />
-                        </div>
-                        <h2 className="text-4xl font-bold text-white mb-4 tracking-tight">Active Project: {currentProject?.name}</h2>
-                        <p className="text-zinc-500 max-w-md mx-auto text-lg">Your diagnostic environment is ready. Initialize the 12-agent research pipeline for <span className="text-white font-bold">{currentProject?.business_name || 'this business'}</span> to see local performance.</p>
-                      </div>
-
-                      <div className="w-full max-w-xl">
-                        <BusinessForm
-                          onSubmit={(info) => {
-                            const isLocked = !!currentProject && auditProjectIds.includes(currentProject.id);
-                            if (isLocked) {
-                              if (auditCache[currentProject?.id]) {
-                                setState({ loading: false, error: null, result: auditCache[currentProject.id].result });
-                              }
-                              return;
-                            }
-                            if (currentProject?.id) {
-                              runAnalysis(info, currentProject.id);
-                              navigate('/dashboard');
-                            } else {
-                              setState({ loading: false, error: "Please select a project before starting an audit.", result: null });
-                            }
-                          }}
-                          onDemo={handleDemoRequest}
-                          isLoading={state.loading}
-                          initialInfo={formInfo}
-                          onInfoChange={setFormInfo}
-                          isLocked={!!currentProject && auditProjectIds.includes(currentProject.id)}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </main>
-
-              <NewProjectModal
-                isOpen={showNewProjectModal}
-                onClose={() => setShowNewProjectModal(false)}
-                initialInfo={modalFormInfo}
-                onInfoChange={setModalFormInfo}
-                onSubmit={async (info) => {
-                  setShowNewProjectModal(false);
-                  const { data, success } = await createProject(session.user.id, info.name);
-                  if (success) {
-                    setCurrentProject(data);
-                    loadProjects(session.user.id);
-                    runAnalysis(info, data.id);
-                  }
-                }}
-                isLoading={state.loading}
-              />
-
-              <SupportModal
-                isOpen={showProjectSettingsModal}
-                onClose={() => setShowProjectSettingsModal(false)}
-                userEmail={session?.user?.email || 'contact@aeoholic.com'}
-                userId={session?.user?.id}
-              />
-
-              {showPlanSelection && (
-                <PlanSelection
-                  userId={session?.user?.id}
-                  onClose={() => setShowPlanSelection(false)}
-                  onSuccess={async () => {
-                    await fetchProfile(session.user.id);
-                    setShowPlanSelection(false);
-                    setShowPaywall(false);
-                  }}
-                />
-              )}
-
-              {showPaywall && (
-                <PaywallOverlay
-                  businessName={businessName}
-                  onAction={() => setShowPlanSelection(true)}
-                  isLoggedIn={!!session}
-                />
-              )}
-            </div>
+            <MobileDashboard
+              session={session}
+              currentProject={currentProject}
+              projects={projects}
+              userProfile={userProfile}
+              auditProjectIds={auditProjectIds}
+              state={state}
+              businessName={businessName}
+              showPaywall={showPaywall}
+              showPlanSelection={showPlanSelection}
+              showNewProjectModal={showNewProjectModal}
+              showProjectSettingsModal={showProjectSettingsModal}
+              geminiKey={geminiKey}
+              formInfo={formInfo}
+              modalFormInfo={modalFormInfo}
+              onAddProject={() => setShowNewProjectModal(true)}
+              onSettings={() => setShowProjectSettingsModal(true)}
+              onUpgrade={() => setShowPlanSelection(true)}
+              onRenameProject={handleRenameProject}
+              onDeleteProject={handleDeleteProject}
+              onLogout={async () => {
+                await supabase.auth.signOut();
+                localStorage.removeItem('aeoholic_last_project_id');
+                navigate('/', { replace: true });
+              }}
+              onSelectProject={(proj: any) => {
+                setCurrentProject(proj);
+                if (proj?.id) localStorage.setItem('aeoholic_last_project_id', proj.id);
+              }}
+              onClosePlanSelection={() => setShowPlanSelection(false)}
+              onPlanSuccess={async () => {
+                await fetchProfile(session.user.id);
+                setShowPlanSelection(false);
+                setShowPaywall(false);
+              }}
+              onCloseNewProject={() => setShowNewProjectModal(false)}
+              onSubmitNewProject={async (info: any) => {
+                setShowNewProjectModal(false);
+                const { data, success } = await createProject(session.user.id, info.name);
+                if (success) {
+                  setCurrentProject(data);
+                  loadProjects(session.user.id);
+                  runAnalysis(info, data.id);
+                }
+              }}
+              onCloseSettings={() => setShowProjectSettingsModal(false)}
+              onFormInfoChange={setFormInfo}
+              onModalFormInfoChange={setModalFormInfo}
+              onReset={handleReset}
+              onRunAnalysis={runAnalysis}
+              onDemo={handleDemoRequest}
+              onIncrementSimulation={async () => {
+                if (session?.user?.id) {
+                  await incrementSimulationUsage(session.user.id);
+                  const usage = await getUserUsage(session.user.id);
+                  setUserProfile((prev: any) => ({ ...prev, simulations_consumed: usage.simulations_used }));
+                }
+              }}
+              auditCache={auditCache}
+              setState={setState}
+            />
           )
         } />
         <Route path="*" element={
