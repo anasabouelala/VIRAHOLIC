@@ -22,6 +22,8 @@ import Sidebar from './components/Sidebar';
 import SupportModal from './components/SupportModal';
 import NewProjectModal from './components/NewProjectModal';
 import MobileDashboard from './components/MobileDashboard';
+import FreeAuditLanding from './components/FreeAuditLanding';
+import ThankYou from './components/ThankYou';
 
 import { Routes, Route, useLocation, useNavigate, Navigate } from 'react-router-dom';
 
@@ -114,7 +116,9 @@ const App: React.FC = () => {
         setCurrentProject(null);
         setUserProfile(null);
         setAuditProjectIds([]);
-        navigate('/');
+        if (window.location.pathname.startsWith('/dashboard')) {
+          navigate('/');
+        }
       }
     });
 
@@ -572,6 +576,8 @@ const App: React.FC = () => {
                 )}
 
                 <Routes>
+                  <Route path="/freeaudit" element={<FreeAuditLanding />} />
+                  <Route path="/thankyou" element={<ThankYou />} />
                   <Route path="/privacy" element={<StaticPage title="Privacy Policy" onBack={() => navigate('/')}><hgroup><h3 className="text-white text-lg font-bold italic tracking-tight uppercase">1. Data Sovereignty</h3></hgroup><p>We believe your audit data should remain yours...</p></StaticPage>} />
                   <Route path="/terms" element={<StaticPage title="Terms of Service" onBack={() => navigate('/')}><hgroup><h3 className="text-white text-lg font-bold italic tracking-tight uppercase">1. Intent and Usage</h3></hgroup><p>AEOHOLIC is a diagnostic suite for SMEs...</p></StaticPage>} />
                   <Route path="/" element={
